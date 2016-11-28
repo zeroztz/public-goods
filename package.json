@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "monitor": "nodemon app.js",
-    "deploy": "gcloud app deploy app.yaml",
+    "deploy": "gcloud app deploy app.yaml"
   },
   "author": "Zero Zhang",
   "contributors": [
@@ -27,11 +27,13 @@
     ]
   },
   "dependencies": {
+    "body-parser": "^1.15.2",
     "express": "^4.14.0",
+    "@google-cloud/datastore": "^0.1.1",
     "pug": "^2.0.0-beta6"
   },
   "devDependencies": {
-    "nodejs-repo-tools": "git+https://github.com/GoogleCloudPlatform/nodejs-repo-tools.git#21daa823090c43fb667157c8b5b0c3b7f45a8357",
+    "nodejs-repo-tools": "git+https://github.com/GoogleCloudPlatform/nodejs-repo-tools.git#21daa823090c43fb667157c8b5b0c3b7f45a8357"
   },
   "engines": {
     "node": ">=4.3.2"
