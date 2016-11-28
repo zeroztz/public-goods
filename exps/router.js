@@ -69,7 +69,7 @@ router.post('/create', (req, res, next) => {
             res.redirect(`${req.baseUrl}/${id}`);
         });
     } else {
-        next(new Error(`wrong pass code${credential.passcode}`));
+        next(new Error(`wrong pass code: ${credential.passcode}`));
     }
 });
 // [END create_post]
