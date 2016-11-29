@@ -13,6 +13,9 @@ app.set('trust proxy', true);
 // Experiments
 app.use('/exps', require('./exps/router'));
 
+// Participants
+app.use('/parts', require('./parts/router'));
+
 // Redirect root to /exps
 app.get('/', (req, res) => {
     res.redirect('/exps');

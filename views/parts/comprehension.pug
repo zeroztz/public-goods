@@ -1,0 +1,15 @@
+extends ../base.pug
+
+block content
+  h3 Comprehension Test
+  p Now, to ensure that you understand the game, please answer the following questions.
+  form(method="POST")
+    each question in questions
+      fieldset
+        legend #{question.legend}
+        | #{question.description}
+        br
+        select(name=`${question.name}`)
+          each value in Object.keys(question.options)
+            option(value=`${value}`) #{question.options[value]}
+    input(type="submit", value="Submit")
