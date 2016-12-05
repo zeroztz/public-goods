@@ -9,27 +9,7 @@ const router = express.Router();
 // Set Content-Type for all responses for these ruotes
 router.use((req, res, next) => {
     res.set('Content-Type', 'text/html');
-    req.pg = {
-        part: {
-            stage: 'instruction'
-        }
-    };
     next();
-});
-
-/**
- * GET /:part
- *
- * Redirects to corresponding pages.
- */
-router.get('/:part', (req, res, next) => {
-    console.log(req.pg);
-    if (req.pg.part.stage == 'instruction')
-        res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
-    else
-        res.render('error.pug', {
-            errorMsg: `Invalid stage: ${req.pg.part.stage}`
-        });
 });
 
 /**
@@ -52,12 +32,40 @@ router.get('/:part/comprehension', (req, res, next) => {
 });
 
 /**
+ * Loads participant information.
+ */
+router.use((req, res, next) => {
+    console.log("Load participant");
+    req.pg = {
+        part: {
+            stage: 'instruction'
+        }
+    };
+    next();
+});
+
+/**
  * POST /:id/comprehension
  *
  * Evaluates submitted answers
  */
 router.post('/:part/comprehension', (req, res, next) => {
     // TODO(ztz): check the answer.
+    next();
+});
+
+/**
+ * GET /:part
+ *
+ * Redirects to corresponding pages.
+ */
+router.get('/:part', (req, res, next) => {
+    if (req.pg.part.stage == 'instruction')
+        res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
+    else
+        res.render('error.pug', {
+            errorMsg: `Invalid stage: ${req.pg.part.stage}`
+        });
 });
 
 module.exports = router;
