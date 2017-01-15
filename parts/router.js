@@ -1,10 +1,16 @@
 'use strict';
 
 const express = require('express');
+const bodyParser = require('body-parser');
 //const datastore = require('./datastore');
 const comprehension = require('../data/comprehension');
 
 const router = express.Router();
+
+// Automatically parse request body as form data
+router.use(bodyParser.urlencoded({
+    extended: false
+}));
 
 // Set Content-Type for all responses for these ruotes
 router.use((req, res, next) => {
@@ -23,7 +29,7 @@ router.get('/:part/instruction', (req, res, next) => {
 });
 
 /**
- * GET /:id/comprehension
+ * GET /:part/comprehension
  *
  * Shows a comprehension test
  */
@@ -50,7 +56,15 @@ router.use((req, res, next) => {
  * Evaluates submitted answers
  */
 router.post('/:part/comprehension', (req, res, next) => {
-    // TODO(ztz): check the answer.
+    const answers = req.body;
+    var pass = true;
+    comprehension.questions.forEach(function(question) {
+        if (answers[question.name] != question.answer) {
+            pass = false;
+        }
+    });
+    console.log(pass);
+    // TODO(ztz): render coressponding page.
     next();
 });
 

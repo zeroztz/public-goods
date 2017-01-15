@@ -9,7 +9,7 @@ var comprehension = {
             c: "3",
             d: "5"
         },
-        correctOption: "c"
+        answer: "c"
     }, {
         legend: "Question 2",
         description: "How many points are allotted to each participant at the beginning of each round?",
@@ -20,7 +20,7 @@ var comprehension = {
             c: "20",
             d: "30"
         },
-        correctOption: "idk"
+        answer: "b"
     }]
 }
 
