@@ -56,22 +56,15 @@ function createNewExperiment(date, cb) {
                 return;
             }
 
-            var participantEntities = [{
-                key: ds.key(kindParticipant),
-                data: {
-                    experimentId: experimentEntity.key.id
-                }
-            }, {
-                key: ds.key(kindParticipant),
-                data: {
-                    experimentId: experimentEntity.key.id
-                }
-            }, {
-                key: ds.key(kindParticipant),
-                data: {
-                    experimentId: experimentEntity.key.id
-                }
-            }];
+            var participantEntities = [1, 2, 3].map(function(id) {
+                return {
+                    key: ds.key(kindParticipant),
+                    data: {
+                        experimentId: experimentEntity.key.id,
+                        stage: 'instruction'
+                    }
+                };
+            });
 
             ds.upsert(
                 participantEntities,

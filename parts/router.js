@@ -2,7 +2,7 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-//const datastore = require('./datastore');
+const datastore = require('./datastore');
 const comprehension = require('../data/comprehension');
 
 const router = express.Router();
@@ -40,20 +40,24 @@ router.get('/:part/comprehension', (req, res, next) => {
 /**
  * Loads participant information.
  */
-router.use((req, res, next) => {
-    console.log("Load participant");
-    req.pg = {
-        part: {
-            stage: 'instruction'
+router.use('/:part*', (req, res, next) => {
+    datastore.loadParticipant(req.params.part, (err, part) => {
+        if (err) {
+            next(err);
+            return;
         }
-    };
-    next();
+        req.pg = {
+            part
+        };
+        console.log(req.pg);
+        next();
+    });
 });
 
 /**
  * POST /:id/comprehension
  *
- * Evaluates submitted answers
+ * Evaluates submitted answers.
  */
 router.post('/:part/comprehension', (req, res, next) => {
     const answers = req.body;
@@ -63,9 +67,14 @@ router.post('/:part/comprehension', (req, res, next) => {
             pass = false;
         }
     });
-    console.log(pass);
-    // TODO(ztz): render coressponding page.
-    next();
+    if (pass) {
+        req.pg.part.stage = 'game'
+        req.pg.part.finishedRound = 0
+        datastore.saveParticipant(req.params.part, req.pg.part);
+        res.redirect(`${req.baseUrl}`);
+    } else {
+        next(new Error('Incorrect'));
+    }
 });
 
 /**
@@ -77,9 +86,17 @@ router.get('/:part', (req, res, next) => {
     if (req.pg.part.stage == 'instruction')
         res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
     else
-        res.render('error.pug', {
-            errorMsg: `Invalid stage: ${req.pg.part.stage}`
-        });
+        next(new Error(`Invalid stage: ${req.pg.part.stage}`));
+});
+
+/**
+ * Errors on "/*" routes.
+ */
+router.use((err, req, res, next) => {
+    // Format error and forward to generic error handler for logging and
+    // responding to the request
+    err.response = err.message;
+    next(err);
 });
 
 module.exports = router;
