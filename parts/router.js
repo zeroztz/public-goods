@@ -38,7 +38,7 @@ router.get('/:part/comprehension', (req, res, next) => {
 });
 
 /**
- * Loads participant information.
+ * Loads participant on all /:part*.
  */
 router.use('/:part*', (req, res, next) => {
     datastore.loadParticipant(req.params.part, (err, part) => {
@@ -46,16 +46,17 @@ router.use('/:part*', (req, res, next) => {
             next(err);
             return;
         }
-        req.pg = {
-            part
-        };
+        if (req.pg === undefined) {
+            req.pg = {};
+        }
+        req.pg.part = part;
         console.log(req.pg);
         next();
     });
 });
 
 /**
- * POST /:id/comprehension
+ * POST /:part/comprehension
  *
  * Evaluates submitted answers.
  */
@@ -71,9 +72,23 @@ router.post('/:part/comprehension', (req, res, next) => {
         req.pg.part.stage = 'game'
         req.pg.part.finishedRound = 0
         datastore.saveParticipant(req.params.part, req.pg.part);
-        res.redirect(`${req.baseUrl}`);
+        res.redirect(`${req.originalUrl}/correct`);
     } else {
         next(new Error('Incorrect'));
+    }
+});
+
+/**
+ * GET /:part/comprehension/correct
+ *
+ * Shows comprehension test passing message and guide participant to game.
+ * Checks whether it's in the correct stage, if not show an error message instead.
+ */
+router.get('/:part/comprehension/correct', (req, res, next) => {
+    if (req.pg.part.stage != 'instruction') {
+        res.render('parts/comprehension_correct.pug');
+    } else {
+        next(new Error("You didn't finish comprehension check!"));
     }
 });
 
