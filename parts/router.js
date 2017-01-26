@@ -7,6 +7,9 @@ const comprehension = require('../data/comprehension');
 
 const router = express.Router();
 
+const stageInstruction = 'instruction';
+const stageGame = 'game';
+
 // Automatically parse request body as form data
 router.use(bodyParser.urlencoded({
     extended: false
@@ -50,9 +53,22 @@ router.use('/:part*', (req, res, next) => {
             req.pg = {};
         }
         req.pg.part = part;
-        console.log(req.pg);
         next();
     });
+});
+
+/**
+ * GET /:part
+ *
+ * Redirects to corresponding pages.
+ */
+router.get('/:part', (req, res, next) => {
+    if (req.pg.part.stage == stageInstruction)
+        res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
+    else if (req.pg.part.stage == stageGame)
+        res.redirect(`${req.baseUrl}/${req.params.part}/game`);
+    else
+        next(new Error(`Invalid stage: ${req.pg.part.stage}`));
 });
 
 /**
@@ -61,20 +77,25 @@ router.use('/:part*', (req, res, next) => {
  * Evaluates submitted answers.
  */
 router.post('/:part/comprehension', (req, res, next) => {
+    if (req.pg.part.stage != stageInstruction)
+        next(new Error(`You have already finished comprehension test`));
     const answers = req.body;
-    var pass = true;
+    var missCount = 0;
     comprehension.questions.forEach(function(question) {
         if (answers[question.name] != question.answer) {
-            pass = false;
+            ++missCount;
         }
     });
-    if (pass) {
-        req.pg.part.stage = 'game'
-        req.pg.part.finishedRound = 0
+    if (missCount == 0) {
+        req.pg.part.stage = stageGame;
+        req.pg.part.finishedRound = 0;
+        req.pg.part.viewGameResult = false;
         datastore.saveParticipant(req.params.part, req.pg.part);
         res.redirect(`${req.originalUrl}/correct`);
     } else {
-        next(new Error('Incorrect'));
+        res.render('parts/comprehension_missed.pug', {
+            missCount
+        });
     }
 });
 
@@ -85,7 +106,7 @@ router.post('/:part/comprehension', (req, res, next) => {
  * Checks whether it's in the correct stage, if not show an error message instead.
  */
 router.get('/:part/comprehension/correct', (req, res, next) => {
-    if (req.pg.part.stage != 'instruction') {
+    if (req.pg.part.stage != stageInstruction) {
         res.render('parts/comprehension_correct.pug');
     } else {
         next(new Error("You didn't finish comprehension check!"));
@@ -93,16 +114,36 @@ router.get('/:part/comprehension/correct', (req, res, next) => {
 });
 
 /**
- * GET /:part
+ * GET /:part/game
  *
- * Redirects to corresponding pages.
+ * Plays a round of game or shows result of a round.
  */
-router.get('/:part', (req, res, next) => {
-    if (req.pg.part.stage == 'instruction')
-        res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
-    else
-        next(new Error(`Invalid stage: ${req.pg.part.stage}`));
+router.get('/:part/game', (req, res, next) => {
+    if (req.pg.part.stage == stageInstruction) {
+        next(new Error("You have not finished comprehension check!"));
+    } else if (req.pg.part.stage !=stageGame) {
+        next(new Error("You have finished all the game rounds!"));
+    }
+    if (req.pg.part.viewGameResult) {
+        res.redirect(`${req.baseUrl}/${req.params.part}/game/result`);
+    } else {
+        res.render('parts/game_play.pug');
+    }
 });
+
+/**
+ * POST /:part/game
+ *
+ * Receives contribution of a round.
+ */
+router.post('/:part/game', (req, res, next) => {
+    if (req.pg.part.stage != stageGame)
+        next(new Error("You are not in game stage"));
+    const contribution = req.body;
+    console.log(contribution);
+    next(new Error("Not implemented"));
+});
+
 
 /**
  * Errors on "/*" routes.
