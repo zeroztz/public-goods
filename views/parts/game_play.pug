@@ -1,0 +1,18 @@
+extends ../base.pug
+
+block content
+  h3 Play
+
+  p 
+    i You have&nbsp;
+      u 10
+      | &nbsp;seconds to make your decision.
+
+  p How many of your 10 points would you like to transfer to the group fund?
+  
+  form(method="POST")
+    - for(var i = 0; i <= 10; i++)
+      input(type="radio", name="contribution", value=1)
+      | #{i}
+      br
+    input(type="submit", value="Submit")
