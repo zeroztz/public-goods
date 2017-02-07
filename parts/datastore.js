@@ -87,9 +87,11 @@ function loadAllParticipants(id, cb) {
 function updateAllParticipants(partcipants, cb) {
     var participantEntities =
         participants.map((participant) => {
-            key: ds.key([kindExperiment, parseInt(pariticipant.id)]),
-            method: 'update',
-            data: participant.data
+            return {
+                key: ds.key([kindExperiment, parseInt(pariticipant.id)]),
+                method: 'update',
+                data: participant.data
+            }
         });
     ds.save(participantEntities, (err) => {
         cb(err);

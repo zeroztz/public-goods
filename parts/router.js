@@ -153,12 +153,12 @@ function computeResult(err, participants, res, next) {
         next(err);
         return;
     }
-    boolean allFinished =
+    var allFinished =
         pariticipants.reduce((allPreviousFinished, participant) => {
             return allPreviousFinished &&
                 participant.data.finishedRound + 1 ==
                 participant.data.contribution.length;
-        });
+        }, true);
     if (!allFinished) {
         res.render('parts/play_wait.pug');
         return;
