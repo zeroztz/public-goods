@@ -46,17 +46,52 @@ function saveParticipant(id, part, cb) {
     ds.upsert(
         entity,
         (err) => {
+            cb(err);
+        }
+    );
+}
+
+/*
+ * Loads all participants in a experiment.
+ */
+function loadAllParticipants(id, cb) {
+    const experimentKey = ds.key([kindExperiment, parseInt(id, 10)]);
+    ds.get(experimentKey, (err, experimentEntity) => {
+        if (err) {
+            cb(err, null);
+            return;
+        }
+        var participantKeys = experimentEntity.data.participants.map(
+            function(id) {
+                return ds.key([kindParticipant, parseInt(id, 10)]);
+            });
+        ds.get(participantKeys, (err, participantEntities) => {
             if (err) {
                 cb(err, null);
                 return;
             }
-        }
-    );
+            cb(null,
+                participantEntities.map(function(entity) {
+                    return {
+                        id: entity.key.id,
+                        data: entity.data
+                    };
+                }));
+        });
+    });
+}
+
+/*
+ * Saves all participants in a experiment.
+ */
+function saveAllParticipants(id, cb) {
+    // TODO(ztz): implement it
 }
 
 // [START exports]
 module.exports = {
     loadParticipant,
-    saveParticipant
+    saveParticipant,
+    loadAllParticipants
 };
 // [END exports]

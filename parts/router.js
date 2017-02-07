@@ -77,8 +77,10 @@ router.get('/:part', (req, res, next) => {
  * Evaluates submitted answers.
  */
 router.post('/:part/comprehension', (req, res, next) => {
-    if (req.pg.part.stage != stageInstruction)
+    if (req.pg.part.stage != stageInstruction) {
         next(new Error(`You have already finished comprehension test`));
+        return;
+    }
     const answers = req.body;
     var missCount = 0;
     comprehension.questions.forEach(function(question) {
@@ -90,8 +92,15 @@ router.post('/:part/comprehension', (req, res, next) => {
         req.pg.part.stage = stageGame;
         req.pg.part.finishedRound = 0;
         req.pg.part.viewGameResult = false;
-        datastore.saveParticipant(req.params.part, req.pg.part);
-        res.redirect(`${req.originalUrl}/correct`);
+        req.pg.part.contributions = [];
+        req.pg.part.balance = 0;
+        datastore.saveParticipant(req.params.part, req.pg.part, (err) => {
+            if (err) {
+                next(err);
+                return;
+            }
+            res.redirect(`${req.originalUrl}/correct`);
+        });
     } else {
         res.render('parts/comprehension_missed.pug', {
             missCount
@@ -121,8 +130,11 @@ router.get('/:part/comprehension/correct', (req, res, next) => {
 router.get('/:part/game', (req, res, next) => {
     if (req.pg.part.stage == stageInstruction) {
         next(new Error("You have not finished comprehension check!"));
-    } else if (req.pg.part.stage !=stageGame) {
+        return;
+    }
+    if (req.pg.part.stage != stageGame) {
         next(new Error("You have finished all the game rounds!"));
+        return;
     }
     if (req.pg.part.viewGameResult) {
         res.redirect(`${req.baseUrl}/${req.params.part}/game/result`);
@@ -136,12 +148,64 @@ router.get('/:part/game', (req, res, next) => {
  *
  * Receives contribution of a round.
  */
+function computeResult(err, participants, res, next) {
+    if (err) {
+        next(err);
+        return;
+    }
+    boolean allFinished =
+        pariticipants.reduce((allPreviousFinished, participant) => {
+            return allPreviousFinished &&
+                participant.data.finishedRound + 1 ==
+                participant.data.contribution.length;
+        });
+    if (!allFinished) {
+        // TODO(ztz): redirect to a page to wait for all participant finish
+        // their rounds.
+        next(new Error("Please wait"));
+        return;
+    }
+    var result = {
+        participantContributions: participants.map((participant) =>
+            participant.data.contribution[participant.data.finishedRound])
+    };
+    result.groupFund =
+        result.participantContributions.reduce((sum, contribution) =>
+            sum + contribution);
+    result.groupEarning =
+        result.groupFund * 2;
+    result.participantBalances = participants.map((participant) => {
+        participant.data.balance += result.groupEarnings / participants.length;
+        ++participant.data.finishedRound;
+        participant.data.viewResult = true;
+        return participant.data.balance;
+    });
+    saveAllParticipants(participants);
+    console.log(result);
+    res.render('parts/game_result.pug', result);
+}
 router.post('/:part/game', (req, res, next) => {
-    if (req.pg.part.stage != stageGame)
+    if (req.pg.part.stage != stageGame) {
         next(new Error("You are not in game stage"));
-    const contribution = req.body;
-    console.log(contribution);
-    next(new Error("Not implemented"));
+        return;
+    }
+    const form = req.body;
+    if (req.pg.part.contributions.length !=
+        req.pg.part.finishedRound) {
+        next(new Error("You have already made contribution this round"));
+        return;
+    }
+    req.pg.part.contributions.push(parseInt(form.contribution));
+    datastore.saveParticipant(req.params.part, req.pg.part, (err) => {
+        if (err) {
+            next(err);
+            return;
+        }
+        datastore.loadAllParticipants(req.pg.part.experimentId,
+            (err, participants) => {
+                computeResult(err, participants, res, next);
+            });
+    });
 });
 
 
