@@ -40,9 +40,9 @@ function loadParticipant(id, cb) {
  */
 function saveParticipant(id, part, cb) {
     var entity = {
-        key: ds.key([kindParticipant, parseInt(id, 10)])
+        key: ds.key([kindParticipant, parseInt(id, 10)]),
+        data: part
     };
-    entity.data = part;
     ds.upsert(
         entity,
         (err) => {
@@ -82,16 +82,25 @@ function loadAllParticipants(id, cb) {
 }
 
 /*
- * Saves all participants in a experiment.
+ * Updates all participants in a experiment.
  */
-function saveAllParticipants(id, cb) {
-    // TODO(ztz): implement it
+function updateAllParticipants(partcipants, cb) {
+    var participantEntities =
+        participants.map((participant) => {
+            key: ds.key([kindExperiment, parseInt(pariticipant.id)]),
+            method: 'update',
+            data: participant.data
+        });
+    ds.save(participantEntities, (err) => {
+        cb(err);
+    });
 }
 
 // [START exports]
 module.exports = {
     loadParticipant,
     saveParticipant,
-    loadAllParticipants
+    loadAllParticipants,
+    updateAllParticipants
 };
 // [END exports]

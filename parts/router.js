@@ -180,9 +180,14 @@ function computeResult(err, participants, res, next) {
         participant.data.viewResult = true;
         return participant.data.balance;
     });
-    saveAllParticipants(participants);
     console.log(result);
-    res.render('parts/game_result.pug', result);
+    updateAllParticipants(participants, (err) => {
+        if (err) {
+            next(err);
+            return;
+        }
+        res.render('parts/game_result.pug', result);
+    });
 }
 router.post('/:part/game', (req, res, next) => {
     if (req.pg.part.stage != stageGame) {
