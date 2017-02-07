@@ -160,9 +160,7 @@ function computeResult(err, participants, res, next) {
                 participant.data.contribution.length;
         });
     if (!allFinished) {
-        // TODO(ztz): redirect to a page to wait for all participant finish
-        // their rounds.
-        next(new Error("Please wait"));
+        res.render('parts/play_wait.pug');
         return;
     }
     var result = {
