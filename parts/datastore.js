@@ -84,11 +84,11 @@ function loadAllParticipants(id, cb) {
 /*
  * Updates all participants in a experiment.
  */
-function updateAllParticipants(partcipants, cb) {
+function updateAllParticipants(participants, cb) {
     var participantEntities =
         participants.map((participant) => {
             return {
-                key: ds.key([kindExperiment, parseInt(pariticipant.id)]),
+                key: ds.key([kindParticipant, parseInt(participant.id)]),
                 method: 'update',
                 data: participant.data
             }

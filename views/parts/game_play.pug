@@ -12,7 +12,7 @@ block content
   
   form(method="POST")
     - for(var i = 0; i <= 10; i++)
-      input(type="radio", name="contribution", value=1)
+      input(type="radio", name="contribution", value=i)
       | #{i}
       br
     input(type="submit", value="Submit")

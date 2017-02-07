@@ -128,6 +128,7 @@ router.get('/:part/comprehension/correct', (req, res, next) => {
  * Plays a round of game or shows result of a round.
  */
 router.get('/:part/game', (req, res, next) => {
+    // TODO(ztz): big issue. Some participans might start game before other finished comprehension test.
     if (req.pg.part.stage == stageInstruction) {
         next(new Error("You have not finished comprehension check!"));
         return;
@@ -137,6 +138,7 @@ router.get('/:part/game', (req, res, next) => {
         return;
     }
     if (req.pg.part.viewGameResult) {
+        // TODO(ztz): store result in exp and display it here.
         res.redirect(`${req.baseUrl}/${req.params.part}/game/result`);
     } else {
         res.render('parts/game_play.pug');
@@ -154,18 +156,18 @@ function computeResult(err, participants, res, next) {
         return;
     }
     var allFinished =
-        pariticipants.reduce((allPreviousFinished, participant) => {
+        participants.reduce((allPreviousFinished, participant) => {
             return allPreviousFinished &&
                 participant.data.finishedRound + 1 ==
-                participant.data.contribution.length;
+                participant.data.contributions.length;
         }, true);
     if (!allFinished) {
-        res.render('parts/play_wait.pug');
+        res.render('parts/game_wait.pug');
         return;
     }
     var result = {
         participantContributions: participants.map((participant) =>
-            participant.data.contribution[participant.data.finishedRound])
+            participant.data.contributions[participant.data.finishedRound])
     };
     result.groupFund =
         result.participantContributions.reduce((sum, contribution) =>
@@ -173,13 +175,13 @@ function computeResult(err, participants, res, next) {
     result.groupEarning =
         result.groupFund * 2;
     result.participantBalances = participants.map((participant) => {
-        participant.data.balance += result.groupEarnings / participants.length;
+        participant.data.balance += result.groupEarning / participants.length;
         ++participant.data.finishedRound;
-        participant.data.viewResult = true;
+        participant.data.viewGameResult = true;
         return participant.data.balance;
     });
     console.log(result);
-    updateAllParticipants(participants, (err) => {
+    datastore.updateAllParticipants(participants, (err) => {
         if (err) {
             next(err);
             return;
@@ -196,9 +198,11 @@ router.post('/:part/game', (req, res, next) => {
     if (req.pg.part.contributions.length !=
         req.pg.part.finishedRound) {
         next(new Error("You have already made contribution this round"));
-        return;
+    } else {
+        console.log("a", form.contribution);
+        req.pg.part.contributions.push(parseInt(form.contribution));
+        console.log("b", req.pg.part.contributions[0]);
     }
-    req.pg.part.contributions.push(parseInt(form.contribution));
     datastore.saveParticipant(req.params.part, req.pg.part, (err) => {
         if (err) {
             next(err);
@@ -206,6 +210,7 @@ router.post('/:part/game', (req, res, next) => {
         }
         datastore.loadAllParticipants(req.pg.part.experimentId,
             (err, participants) => {
+                console.log(participants);
                 computeResult(err, participants, res, next);
             });
     });

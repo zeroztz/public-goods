@@ -7,28 +7,22 @@ block content
     i
       This screen will automatically move forward in 20 seconds.
 
-  p
-    Here are the results for each member of the group:
+  p Here are the results for each member of the group:
 
-  p 
-    Contributed to the group fund:
+  p Contributed to the group fund:
 
   p
-    each val in pariticipantContributions
+    each val in participantContributions
       li Participant #{val}
 
-  p
-    Group fund total = #{totalFund}
+  p Group fund total = #{totalFund}
+
+  p Group fund X 2 = #{totalEarning}
+
+  p Amount each participant ends up with:
 
   p
-    Group fund X 2 = #{totalEarning}
-
-  p
-    Amount each participant ends up with:
-
-  p
-    each val in pariticipantBalances
+    each val in participantBalances
       li Participant #{val}
 
-  p
-    Note: These points are yours to keep and will be unaffected by how you play in future rounds.
+  p Note: These points are yours to keep and will be unaffected by how you play in future rounds.
