@@ -54,29 +54,38 @@ function saveParticipant(id, part, cb) {
 /*
  * Loads all participants in a experiment.
  */
-function loadAllParticipants(id, cb) {
+function loadFullExperiment(id, cb) {
     const experimentKey = ds.key([kindExperiment, parseInt(id, 10)]);
     ds.get(experimentKey, (err, experimentEntity) => {
         if (err) {
             cb(err, null);
             return;
         }
+        var fullExperiment = {
+            experiment {
+                id: experimentEntity.key.id,
+                data: entity.data
+            }
+        }
         var participantKeys = experimentEntity.data.participants.map(
             function(id) {
                 return ds.key([kindParticipant, parseInt(id, 10)]);
-            });
+            }
+        );
         ds.get(participantKeys, (err, participantEntities) => {
             if (err) {
                 cb(err, null);
                 return;
             }
-            cb(null,
-                participantEntities.map(function(entity) {
+            fullExperiment.participants = participantEntities.map(
+                function(entity) {
                     return {
                         id: entity.key.id,
                         data: entity.data
                     };
-                }));
+                }
+            )
+            cb(null, fullExperiment);
         });
     });
 }
@@ -84,16 +93,21 @@ function loadAllParticipants(id, cb) {
 /*
  * Updates all participants in a experiment.
  */
-function updateAllParticipants(participants, cb) {
-    var participantEntities =
-        participants.map((participant) => {
+function updateAllParticipants(fullExperiment, cb) {
+    var entities =
+        fullExperiment.participants.map((participant) => {
             return {
                 key: ds.key([kindParticipant, parseInt(participant.id)]),
                 method: 'update',
                 data: participant.data
             }
         });
-    ds.save(participantEntities, (err) => {
+    entities.push({
+        key: ds.key([kindExperiment, parseInt(fullExperiment.experiment.id)]),
+        method: 'update',
+        data: fullExperiment.experiment.data
+    });
+    ds.save(entities, (err) => {
         cb(err);
     });
 }
@@ -102,7 +116,7 @@ function updateAllParticipants(participants, cb) {
 module.exports = {
     loadParticipant,
     saveParticipant,
-    loadAllParticipants,
+    loadFullExperiment,
     updateAllParticipants
 };
 // [END exports]

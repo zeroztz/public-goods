@@ -150,11 +150,12 @@ router.get('/:part/game', (req, res, next) => {
  *
  * Receives contribution of a round.
  */
-function computeResult(err, participants, res, next) {
+function computeResult(err, fullExperiment, res, next) {
     if (err) {
         next(err);
         return;
     }
+    var participants = fullExperiment.participants;
     var allFinished =
         participants.reduce((allPreviousFinished, participant) => {
             return allPreviousFinished &&
@@ -181,7 +182,8 @@ function computeResult(err, participants, res, next) {
         return participant.data.balance;
     });
     console.log(result);
-    datastore.updateAllParticipants(participants, (err) => {
+    fullExperiment.experiment.results.push(result);
+    datastore.updateFullExperiment(participants, (err) => {
         if (err) {
             next(err);
             return;
@@ -208,10 +210,10 @@ router.post('/:part/game', (req, res, next) => {
             next(err);
             return;
         }
-        datastore.loadAllParticipants(req.pg.part.experimentId,
-            (err, participants) => {
-                console.log(participants);
-                computeResult(err, participants, res, next);
+        datastore.loadFullExperiment(req.pg.part.experimentId,
+            (err, fullExperiment) => {
+                console.log(fullExperiment);
+                computeResult(err, fullExperiment, res, next);
             });
     });
 });
