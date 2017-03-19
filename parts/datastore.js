@@ -62,7 +62,7 @@ function loadFullExperiment(id, cb) {
             return;
         }
         var fullExperiment = {
-            experiment {
+            experiment: {
                 id: experimentEntity.key.id,
                 data: entity.data
             }
