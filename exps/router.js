@@ -2,7 +2,7 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const datastore = require('./datastore');
+const api = require(`./api`);
 
 const router = express.Router();
 
@@ -23,17 +23,11 @@ router.use((req, res, next) => {
  * Display a page of experiments (up to ten at a time).
  */
 router.get('/', (req, res, next) => {
-    datastore.listExpByCreationTime(10, req.query.pageToken,
-        (err, entities, cursor) => {
-            if (err) {
-                next(err);
-                return;
-            }
-            res.render('exps/list.pug', {
-                exps: entities,
-                nextPageToken: cursor
-            });
-        });
+    api.getExps(req.query.pagetoken).then(function(result) {
+        res.render(`exps/list.pug`, result);
+    }).catch(function(err) {
+        next(err);
+    });
 });
 
 /**
@@ -57,20 +51,11 @@ router.get('/create', (req, res) => {
  */
 // [START create_post]
 router.post('/create', (req, res, next) => {
-    const credential = req.body;
-
-    if (credential.passcode == "pg") {
-        // create a new experiment with current date.
-        datastore.createNewExperiment(new Date(), (err, id) => {
-            if (err) {
-                next(err);
-                return;
-            }
-            res.redirect(`${req.baseUrl}/${id}`);
-        });
-    } else {
-        next(new Error(`wrong pass code: ${credential.passcode}`));
-    }
+    api.createExp(req.body.passcode).then(function(id) {
+        res.redirect(`${req.baseUrl}/${id}`);
+    }).catch(function(err) {
+        next(err);
+    });
 });
 // [END create_post]
 
@@ -80,14 +65,19 @@ router.post('/create', (req, res, next) => {
  * Display an experiment.
  */
 router.get('/:exp', (req, res, next) => {
-    datastore.readExperiment(req.params.exp, (err, entity) => {
-        if (err) {
-            next(err);
-            return;
+    api.readExp(req.params.exp).then(function(entity) {
+        if (!entity) {
+            next({
+                code: 404,
+                message: 'Not found'
+            });
+        } else {
+            res.render('exps/view.pug', {
+                exp: entity
+            });
         }
-        res.render('exps/view.pug', {
-            exp: entity
-        });
+    }).catch(function(err) {
+        next(err);
     });
 });
 

@@ -22,6 +22,8 @@ describe(`/exps`, () => {
                 const location = response.headers.location;
                 const idPart = location.replace(`/exps/`, ``);
                 id = parseInt(idPart, 10);
+                id.should.not.be.NaN();
+                id.should.not.be.Infinity();
                 response.text.includes(`Redirecting to /exps/`).should.be.true();
             })
             .end(done);
