@@ -43,10 +43,7 @@ class PromiseOrientedStorage {
                 if (err)
                     reject(err);
                 else if (entity) {
-                    resolve({
-                        id: entity.key.id,
-                        data: entity.data
-                    });
+                    resolve(entity.data);
                 } else
                     resolve(null);
             });
@@ -65,19 +62,20 @@ class PromiseOrientedStorage {
                 (err) => {
                     if (err)
                         reject(err);
-                    else
-                        resolve(entity);
+                    else {
+                        resolve(entity.key.id);
+                    }
                 }
             );
         });
     }
 
-    createMultiple(data) {
+    createMultiple(dataList) {
         const kind = this.kind;
-        var entities = data.map(function(datum) {
+        var entities = dataList.map(function(data) {
             return {
                 key: ds.key(kind),
-                data: datum
+                data: data
             };
         });
         return new Promise(function(resolve, reject) {
@@ -87,13 +85,20 @@ class PromiseOrientedStorage {
                     if (err)
                         reject(err);
                     else
-                        resolve(entities);
+                        resolve(entities.map((entity) =>
+                            entity.key.id
+                        ));
                 }
             );
         });
     }
 
-    update(entity) {
+    update(id, data) {
+        var entity = {
+            key: ds.key([this.kind, parseInt(id, 10)]),
+            data: data
+        }
+
         return new Promise(function(resolve, reject) {
             ds.update(
                 entity,
@@ -101,7 +106,7 @@ class PromiseOrientedStorage {
                     if (err)
                         reject(err);
                     else
-                        resolve(entity);
+                        resolve();
                 }
             );
         });

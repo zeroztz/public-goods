@@ -34,25 +34,22 @@ function createExp(passcode) {
     }).then(() => {
         // Creates a new experiment and corresponding participants with current date.
         // Return new experiment id if no error occurs.
-        return datastore.exp.create({
+        var expData = {
             creationDate: new Date()
-        }).then((experimentEntity) => {
-            var parts = [1, 2, 3].map(function(id) {
+        };
+        return datastore.exp.create(expData).then((expId) => {
+            var partDataList = [1, 2, 3].map(function(id) {
                 return {
-                    experimentId: experimentEntity.key.id,
+                    experimentId: expId,
                     stage: 'instruction'
                 };
             });
-            return datastore.part.createMultiple(parts)
-                .then(function(participantEntities) {
-                    experimentEntity.data.participants =
-                        participantEntities.map(
-                            (entity) => {
-                                return entity.key.id;
-                            });
-                    return datastore.exp.update(experimentEntity)
+            return datastore.part.createMultiple(partDataList)
+                .then((partIds) => {
+                    expData.participants = partIds;
+                    return datastore.exp.update(expId, expData)
                         .then(function(entity) {
-                            return entity.key.id;
+                            return expId;
                         });
                 });
         });

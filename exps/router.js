@@ -72,7 +72,10 @@ router.get('/:exp', (req, res, next) => {
                 message: 'Not found'
             });
         } else {
-            res.render('exps/view.pug', result);
+            res.render('exps/view.pug', {
+                id: req.params.exp,
+                data: result
+            });
         }
     }).catch(function(err) {
         next(err);
