@@ -1,11 +1,11 @@
 extends ../base.pug
 
 block content
-  h3 Experiment #{exp.key.id}
+  h3 Experiment #{id}
     | &nbsp;
-    small= exp.data.creationDate
+    small= data.creationDate
 
-  each participant in exp.data.participants
+  each participant in data.participants
     .media
       a(href=`/parts/${participant}`)
         .media-body

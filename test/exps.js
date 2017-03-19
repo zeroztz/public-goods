@@ -67,4 +67,14 @@ describe(`/exps`, () => {
                 .end(done);
         });
     });
+
+    // 500 instead
+    describe.skip(`/:exp`, () => {
+        it(`should show 404 with random id -1.`, (done) => {
+            utils.getRequest(config)
+                .get(`/exps/-1`)
+                .expect(404)
+                .end(done);
+        });
+    });
 });

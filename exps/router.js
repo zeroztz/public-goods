@@ -65,16 +65,14 @@ router.post('/create', (req, res, next) => {
  * Display an experiment.
  */
 router.get('/:exp', (req, res, next) => {
-    api.readExp(req.params.exp).then(function(entity) {
-        if (!entity) {
+    api.readExp(req.params.exp).then(function(result) {
+        if (!result) {
             next({
                 code: 404,
                 message: 'Not found'
             });
         } else {
-            res.render('exps/view.pug', {
-                exp: entity
-            });
+            res.render('exps/view.pug', result);
         }
     }).catch(function(err) {
         next(err);
