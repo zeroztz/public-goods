@@ -31,6 +31,7 @@ class PromiseOrientedStorage {
                     nextQuery.moreResults !== Datastore.NO_MORE_RESULTS ?
                     nextQuery.endCursor : false;
 
+                // TODO hasMore is incorrect;
                 resolve(entities, hasMore);
             });
         });
@@ -45,7 +46,10 @@ class PromiseOrientedStorage {
                 else if (entity) {
                     resolve(entity.data);
                 } else
-                    resolve(null);
+                    reject({
+                        code: 404,
+                        message: 'Not found'
+                    });
             });
         });
     }

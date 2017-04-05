@@ -148,7 +148,7 @@ describe(`[views]`, () => {
         });
 
         describe(`/comprehension`, () => {
-            it(`should show instructions`, (done) => {
+            it(`should show comprehension test`, (done) => {
                 utils.getRequest(config)
                     .get(`/parts/${samplePartId}/comprehension`)
                     .expect(200)

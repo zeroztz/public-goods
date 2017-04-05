@@ -2,13 +2,16 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const api = require(`../api`);
+
+// TODO: remove
 const datastore = require('./datastore');
 const comprehension = require('../data/comprehension');
-
-const router = express.Router();
-
 const stageInstruction = 'instruction';
 const stageGame = 'game';
+// end TODO
+
+const router = express.Router();
 
 // Automatically parse request body as form data
 router.use(bodyParser.urlencoded({
@@ -43,17 +46,23 @@ router.get('/:part/comprehension', (req, res, next) => {
 /**
  * Loads participant on all /:part*.
  */
+// TODO remove this part when pg is not used anymore.
 router.use('/:part*', (req, res, next) => {
-    datastore.loadParticipant(req.params.part, (err, part) => {
-        if (err) {
-            next(err);
+    api.readPart(req.params.part).then((result) => {
+        if (!result) {
+            next({
+                code: 404,
+                message: 'Not found'
+            });
             return;
         }
         if (req.pg === undefined) {
             req.pg = {};
         }
-        req.pg.part = part;
+        req.pg.part = result;
         next();
+    }).catch(function(err) {
+        next(err);
     });
 });
 
@@ -63,12 +72,16 @@ router.use('/:part*', (req, res, next) => {
  * Redirects to corresponding pages.
  */
 router.get('/:part', (req, res, next) => {
-    if (req.pg.part.stage == stageInstruction)
-        res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
-    else if (req.pg.part.stage == stageGame)
-        res.redirect(`${req.baseUrl}/${req.params.part}/game`);
-    else
-        next(new Error(`Invalid stage: ${req.pg.part.stage}`));
+    api.readPart(req.params.part).then((result) => {
+        if (result.stage == stageInstruction)
+            res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
+        else if (result.stage == stageGame)
+            res.redirect(`${req.baseUrl}/${req.params.part}/game`);
+        else
+            next(new Error(`Invalid stage: ${result.stage}`));
+    }).catch((err) => {
+        next(err);
+    });
 });
 
 /**
@@ -77,35 +90,15 @@ router.get('/:part', (req, res, next) => {
  * Evaluates submitted answers.
  */
 router.post('/:part/comprehension', (req, res, next) => {
-    if (req.pg.part.stage != stageInstruction) {
-        next(new Error(`You have already finished comprehension test`));
-        return;
-    }
-    const answers = req.body;
-    var missCount = 0;
-    comprehension.questions.forEach(function(question) {
-        if (answers[question.name] != question.answer) {
-            ++missCount;
+    api.validateComprehensionTest(req.params.part, req.body).then((result) => {
+        if (result.missCount == 0) {
+            res.redirect(`${req.originalUrl}/correct`);
+        } else {
+            res.render('parts/comprehension_missed.pug', {
+                missCount
+            });
         }
     });
-    if (missCount == 0) {
-        req.pg.part.stage = stageGame;
-        req.pg.part.finishedRound = 0;
-        req.pg.part.viewGameResult = false;
-        req.pg.part.contributions = [];
-        req.pg.part.balance = 0;
-        datastore.saveParticipant(req.params.part, req.pg.part, (err) => {
-            if (err) {
-                next(err);
-                return;
-            }
-            res.redirect(`${req.originalUrl}/correct`);
-        });
-    } else {
-        res.render('parts/comprehension_missed.pug', {
-            missCount
-        });
-    }
 });
 
 /**

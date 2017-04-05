@@ -54,13 +54,7 @@ router.post('/create', (req, res, next) => {
     api.createExp(req.body.passcode).then(function(id) {
         res.redirect(`${req.baseUrl}/${id}`);
     }).catch(function(err) {
-        if (err == 'not authorized')
-            next({
-                code: 401,
-                message: err
-            });
-        else
-            next(err);
+        next(err);
     });
 });
 // [END create_post]
@@ -72,17 +66,10 @@ router.post('/create', (req, res, next) => {
  */
 router.get('/:exp', (req, res, next) => {
     api.readExp(req.params.exp).then(function(result) {
-        if (!result) {
-            next({
-                code: 404,
-                message: 'Not found'
-            });
-        } else {
-            res.render('exps/view.pug', {
-                id: req.params.exp,
-                data: result
-            });
-        }
+        res.render('exps/view.pug', {
+            id: req.params.exp,
+            data: result
+        });
     }).catch(function(err) {
         next(err);
     });

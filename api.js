@@ -2,6 +2,10 @@
 
 const datastore = require('./storage/datastore');
 
+const comprehension = require('./data/comprehension');
+const stageInstruction = 'instruction';
+const stageGame = 'game';
+
 function getExps(token) {
     // Lists all experiments in the Datastore sorted desending by creation time.
     // The ``limit`` argument determines the maximum amount of results to
@@ -25,12 +29,20 @@ function getExps(token) {
     });
 }
 
+/**
+ * Creates a experiment with its participants.
+ *
+ * It will reject if passcode is incorrect.
+ */
 function createExp(passcode) {
     return new Promise(function(resolve, reject) {
         if (passcode == "pg")
             resolve(true);
         else
-            reject('not authorized');
+            reject({
+                code: 401,
+                message: 'unauthorized'
+            });
     }).then(() => {
         // Creates a new experiment and corresponding participants with current date.
         // Return new experiment id if no error occurs.
@@ -60,10 +72,50 @@ function readExp(id) {
     return datastore.exp.read(id);
 }
 
+function readPart(id) {
+    return datastore.part.read(id);
+}
+
+/**
+ * Validates answer of comprehension test.
+ */
+function validateComprehensionTest(id, answers) {
+    return datastore.part.read(id).then((part) => {
+        if (part.stage != stageInstruction) {
+            reject(new Error(`You have already finished comprehension test`));
+        }
+        var missCount = 0;
+        comprehension.questions.forEach(function(question) {
+            if (answers[question.name] != question.answer) {
+                ++missCount;
+            }
+        });
+        if (missCount == 0) {
+            part.stage = stageGame;
+            part.finishedRound = 0;
+            part.viewGameResult = false;
+            part.contributions = [];
+            part.balance = 0;
+            return datastore.part.update(id, part).then(() => {
+                return {
+                    missCount
+                }
+            });
+        } else {
+            return {
+                missCount
+            }
+        }
+    });
+}
+
+
 // [START exports]
 module.exports = {
     getExps,
     createExp,
-    readExp
+    readExp,
+    readPart,
+    validateComprehensionTest
 };
 // [END exports]
