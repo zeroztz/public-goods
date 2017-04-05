@@ -28,11 +28,15 @@ app.use((req, res) => {
 
 // Basic error handler
 app.use((err, req, res, next) => {
-    /* jshint unused:false */
-    console.error(err);
-    // If our routes specified a specific response, then send that. Otherwise,
-    // send a generic message so as not to leak anything.
-    res.status(500).send(err.response || 'Something broke!');
+    if (err.code !== undefined) {
+        res.status(err.code).send(err.message || 'no error message available.');
+    } else {
+        /* jshint unused:false */
+        console.error(err);
+        // If our routes specified a specific response, then send that. Otherwise,
+        // send a generic message so as not to leak anything.
+        res.status(500).send(err.response || 'Something broke!');
+    }
 });
 
 if (module === require.main) {

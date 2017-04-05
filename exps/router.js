@@ -2,7 +2,7 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const api = require(`./api`);
+const api = require(`../api`);
 
 const router = express.Router();
 
@@ -54,7 +54,13 @@ router.post('/create', (req, res, next) => {
     api.createExp(req.body.passcode).then(function(id) {
         res.redirect(`${req.baseUrl}/${id}`);
     }).catch(function(err) {
-        next(err);
+        if (err == 'not authorized')
+            next({
+                code: 401,
+                message: err
+            });
+        else
+            next(err);
     });
 });
 // [END create_post]

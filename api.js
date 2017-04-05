@@ -1,6 +1,6 @@
 'use strict';
 
-const datastore = require('../storage/datastore');
+const datastore = require('./storage/datastore');
 
 function getExps(token) {
     // Lists all experiments in the Datastore sorted desending by creation time.
@@ -28,9 +28,9 @@ function getExps(token) {
 function createExp(passcode) {
     return new Promise(function(resolve, reject) {
         if (passcode == "pg")
-            resolve();
+            resolve(true);
         else
-            reject(new Error(`wrong pass code: ${credential.passcode}`));
+            reject('not authorized');
     }).then(() => {
         // Creates a new experiment and corresponding participants with current date.
         // Return new experiment id if no error occurs.

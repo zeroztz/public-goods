@@ -7,6 +7,7 @@
     "start": "node app.js",
     "monitor": "nodemon app.js",
     "deploy": "gcloud app deploy app.yaml",
+    "testserver": "gcloud beta emulators datastore start",
     "test": "mocha"
   },
   "author": "Zero Zhang",
