@@ -76,13 +76,36 @@ function readPart(id) {
     return datastore.part.read(id);
 }
 
+/*
+ * Loads all participants in a experiment.
+ */
+function loadFullExp(expId) {
+    return datastore.exp.read(expId).then((exp) => {
+        var fullExp = {
+            exp: {
+                id: expId,
+                data: exp
+            }
+        }
+        return datastore.part.readMultiple(exp.participants).then((parts) => {
+            fullExp.parts = parts;
+            return fullExp;
+        });
+    });
+}
+
 /**
  * Validates answer of comprehension test.
  */
 function validateComprehensionTest(id, answers) {
     return datastore.part.read(id).then((part) => {
         if (part.stage != stageInstruction) {
-            reject(new Error(`You have already finished comprehension test`));
+            return new Promise((resolve, reject) => {
+                reject({
+                    code: 403,
+                    message: 'You have already finished comprehension test'
+                });
+            });
         }
         var missCount = 0;
         comprehension.questions.forEach(function(question) {
@@ -96,10 +119,33 @@ function validateComprehensionTest(id, answers) {
             part.viewGameResult = false;
             part.contributions = [];
             part.balance = 0;
-            return datastore.part.update(id, part).then(() => {
-                return {
-                    missCount
+            part.readyForGame = false;
+
+            return loadFullExp(part.experimentId).then((fullExp) => {
+                if (
+                    fullExp.parts.reduce(
+                        (allReady, part) => (
+                            allReady && part.data.stage == stageGame
+                        ), true
+                    )
+                ) {
+                    console.log('here');
+                    fullExp.parts.map((part) => {
+                        part.readyForgame = true;
+                    });
+                    datastore.part.updateMultiple(fullExp.parts).then(() => {
+                        return {
+                            missCount
+                        }
+                    });
+                } else {
+                    return datastore.part.update(id, part).then(() => {
+                        return {
+                            missCount
+                        }
+                    });
                 }
+
             });
         } else {
             return {
@@ -108,7 +154,6 @@ function validateComprehensionTest(id, answers) {
         }
     });
 }
-
 
 // [START exports]
 module.exports = {

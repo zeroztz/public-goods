@@ -15,6 +15,10 @@ class PromiseOrientedStorage {
         this.kind = kind;
     }
 
+    getKey(id) {
+        return ds.key([this.kind, parseInt(id, 10)]);
+    }
+
     runQuery(query) {
         const q = ds.createQuery([this.kind])
             .limit(query.limit)
@@ -33,23 +37,6 @@ class PromiseOrientedStorage {
 
                 // TODO hasMore is incorrect;
                 resolve(entities, hasMore);
-            });
-        });
-    }
-
-    read(id) {
-        const key = ds.key([this.kind, parseInt(id, 10)]);
-        return new Promise(function(resolve, reject) {
-            ds.get(key, (err, entity) => {
-                if (err)
-                    reject(err);
-                else if (entity) {
-                    resolve(entity.data);
-                } else
-                    reject({
-                        code: 404,
-                        message: 'Not found'
-                    });
             });
         });
     }
@@ -97,9 +84,43 @@ class PromiseOrientedStorage {
         });
     }
 
+    read(id) {
+        const key = this.getKey(id);
+        return new Promise(function(resolve, reject) {
+            ds.get(key, (err, entity) => {
+                if (err)
+                    reject(err);
+                else if (entity) {
+                    resolve(entity.data);
+                } else
+                    reject({
+                        code: 404,
+                        message: 'Not found'
+                    });
+            });
+        });
+    }
+
+    readMultiple(ids) {
+        const keys = ids.map((id) => this.getKey(id));
+        return new Promise(function(resolve, reject) {
+            ds.get(keys, (err, entities) => {
+                if (err)
+                    reject(err);
+                else
+                    resolve(entities.map((entity) => {
+                        return {
+                            id: entity.key.id,
+                            data: entity.data
+                        }
+                    }));
+            });
+        });
+    }
+
     update(id, data) {
         var entity = {
-            key: ds.key([this.kind, parseInt(id, 10)]),
+            key: this.getKey(id),
             data: data
         }
 
@@ -111,6 +132,25 @@ class PromiseOrientedStorage {
                         reject(err);
                     else
                         resolve();
+                }
+            );
+        });
+    }
+
+    updateMultiple(entries) {
+        var entities = entries.map((entry) => {
+            return {
+                key: this.getKey(entry.id),
+                method: 'update',
+                data: entry.data
+            }
+        });
+        return new Promise(function(resolve, reject) {
+            ds.update(
+                entities,
+                (err) => {
+                    if (err) reject(err);
+                    else resolve();
                 }
             );
         });

@@ -28,10 +28,26 @@ describe(`[views]`, () => {
                 result.should.have.property('participants')
                     .which.is.a.Array().and.have.length(3);
                 partIds = result.participants.map((part) => {
-                    part.should.is.a.Number();
+                    part.should.be.a.Number();
                     return part;
                 });
                 samplePartId = partIds[0];
+            });
+        });
+    });
+
+    describe.skip('promise', () => {
+        it('', (done) => {
+            new Promise((resolve, reject) => {
+                resolve(2);
+            }).then(resolve => {
+                return new Promise((resolve, reject) => {
+                    reject(1);
+                });
+            }).catch((err) => {
+                err.should.equal(1);
+            }).then(() => {
+                done();
             });
         });
     });
@@ -127,15 +143,15 @@ describe(`[views]`, () => {
     });
 
     describe(`/parts/:part`, () => {
-        it(`should redirect to /parts/:part/instruction`, (done) => {
-            utils.getRequest(config)
-                .get(`/parts/${samplePartId}`)
-                .expect(302)
-                .expect('Location', `/parts/${samplePartId}/instruction`)
-                .end(done);
-        });
-
         describe(`/instruction`, () => {
+            it(`../ should redirect to /parts/:part/instruction`, (done) => {
+                utils.getRequest(config)
+                    .get(`/parts/${samplePartId}`)
+                    .expect(302)
+                    .expect('Location', `/parts/${samplePartId}/instruction`)
+                    .end(done);
+            });
+
             it(`should show instructions`, (done) => {
                 utils.getRequest(config)
                     .get(`/parts/${samplePartId}/instruction`)
@@ -148,6 +164,22 @@ describe(`[views]`, () => {
         });
 
         describe(`/comprehension`, () => {
+            it(`../game should not able to go to game directly`, (done) => {
+                utils.getRequest(config)
+                    .get(`/parts/${samplePartId}/game`)
+                    .expect(302)
+                    .expect('Location', `/parts/${samplePartId}`)
+                    .end(done);
+            });
+
+            it(`../game should not able to post contribution`, (done) => {
+                utils.getRequest(config)
+                    .post(`/parts/${samplePartId}/game`)
+                    .expect(302)
+                    .expect('Location', `/parts/${samplePartId}`)
+                    .end(done);
+            });
+
             it(`should show comprehension test`, (done) => {
                 utils.getRequest(config)
                     .get(`/parts/${samplePartId}/comprehension`)
@@ -156,15 +188,62 @@ describe(`[views]`, () => {
                     .expect(/method="POST"/)
                     .end(done);
             });
+
+            it(`should not pass when there is any incorrect answer`, (done) => {
+                utils.getRequest(config)
+                    .post(`/parts/${samplePartId}/comprehension`)
+                    .send('q1=c')
+                    .send('q2=c')
+                    .expect(200)
+                    .expect(/You seem to have missed at least one of the comprehension check questions./)
+                    .end(done);
+            });
+
             it(`should pass when answers are correct`, (done) => {
                 utils.getRequest(config)
                     .post(`/parts/${samplePartId}/comprehension`)
                     .send('q1=c')
                     .send('q2=b')
-                    .expect(302)
-                    .expect('Location', `/parts/${samplePartId}/comprehension/correct`)
+                    .expect(200)
+                    .expect(/You got all the comprehension questions correct/)
                     .end(done);
             });
+
+            it('should not allow you submit it again if you have already passed', (done) => {
+                utils.getRequest(config)
+                    .post(`/parts/${samplePartId}/comprehension`)
+                    .send('q1=c')
+                    .send('q2=c')
+                    .expect(403)
+                    .expect('You have already finished comprehension test')
+                    .end(done);
+            });
+
+            it(`../game should wait for other participants`, (done) => {
+                utils.getRequest(config)
+                    .get(`/parts/${samplePartId}/game`)
+                    .expect(200)
+                    .expect(/Please wait for all paritipants to finish comprehension test/)
+                    .end(done);
+            });
+
+            after((done) => {
+                partIds.map((id) => {
+                    if (id != samplePartId) {
+                        api.validateComprehensionTest(
+                            id, {
+                                q1: 'c',
+                                q2: 'b'
+                            }
+                        ).then((missCount) => {
+                            missCount.should.be.zero();
+                        });
+                    }
+                });
+                done();
+            });
         });
+
+        describe(`/game`, () => {});
     });
 });

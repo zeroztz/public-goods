@@ -70,7 +70,7 @@ router.get('/:exp', (req, res, next) => {
             id: req.params.exp,
             data: result
         });
-    }).catch(function(err) {
+    }, (err) => {
         next(err);
     });
 });
