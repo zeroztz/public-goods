@@ -47,9 +47,14 @@ function fromDatastore(obj) {
 //       name: property,
 //       value: value
 //       excludeFromIndexes: false
+//     },
+//     {
+//       name: noindexProperty,
+//       value: value
+//       excludeFromIndexes: true
 //     }
 //   ]
-function toDatastore(obj) {
+function toDatastore(obj, nonIndexed) {
     let results = [];
     Object.keys(obj).forEach((k) => {
         if (k == 'id' || obj[k] === undefined) {
@@ -58,19 +63,31 @@ function toDatastore(obj) {
         results.push({
             name: k,
             value: obj[k],
-            excludeFromIndexes: false
+            excludeFromIndexes: nonIndexed.indexOf(k) != -1
         });
     });
     return results;
 }
 
 class PromiseOrientedStorage {
-    constructor(kind) {
+    constructor(kind, nonIndexed) {
         this.kind = kind;
+        this.nonIndexed = nonIndexed;
     }
 
     getKey(id) {
         return ds.key([this.kind, parseInt(id, 10)]);
+    }
+
+    toEntity(entry) {
+        let result = {
+            data: toDatastore(data, this.nonIndexed)
+        };
+        if (entry.id === undefined) {
+            result.key = ds.key(this.kind);
+        } else {
+            result.key = this.getKey(entry.id);
+        }
     }
 
     runQuery(query) {
@@ -99,11 +116,8 @@ class PromiseOrientedStorage {
         });
     }
 
-    create(data) {
-        var entity = {
-            key: ds.key(this.kind),
-            data: toDatastore(data)
-        };
+    create(entry) {
+        var entity = this.toEntity(entry);
 
         return new Promise(function(resolve, reject) {
             ds.insert(
@@ -119,14 +133,8 @@ class PromiseOrientedStorage {
         });
     }
 
-    createMultiple(dataList) {
-        const kind = this.kind;
-        var entities = dataList.map(function(data) {
-            return {
-                key: ds.key(kind),
-                data: toDatastore(data)
-            };
-        });
+    createMultiple(entries) {
+        var entities = entries.map(this.toEntity);
         return new Promise(function(resolve, reject) {
             ds.insert(
                 entities,
@@ -170,10 +178,7 @@ class PromiseOrientedStorage {
     }
 
     update(entry) {
-        var entity = {
-            key: this.getKey(entry.id),
-            data: toDatastore(entry)
-        }
+        var entity = this.toEntity(entry);
 
         return new Promise(function(resolve, reject) {
             ds.update(
@@ -189,13 +194,7 @@ class PromiseOrientedStorage {
     }
 
     updateMultiple(entries) {
-        var entities = entries.map((entry) => {
-            return {
-                key: this.getKey(entry.id),
-                method: 'update',
-                data: toDatastore(entry)
-            }
-        });
+        var entities = entries.map(toEntity);
         return new Promise(function(resolve, reject) {
             ds.update(
                 entities,
@@ -208,8 +207,8 @@ class PromiseOrientedStorage {
     }
 }
 
-const exp = new PromiseOrientedStorage(kindExperiment);
-const part = new PromiseOrientedStorage(kindParticipant);
+const exp = new PromiseOrientedStorage(kindExperiment, []);
+const part = new PromiseOrientedStorage(kindParticipant, []);
 
 // [START exports]
 module.exports = {
