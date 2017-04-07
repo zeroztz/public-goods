@@ -7,15 +7,15 @@ block content
     i.glyphicon.glyphicon-plus
     span  Create experiments
 
-  each exp in exps
+  each exp in entries
     .media
-      a(href=`/exps/${exp.key.id}`)
+      a(href=`/exps/${exp.id}`)
         .media-body
-          h4= exp.key.id
+          h4= exp.id
             | &nbsp;
-            small= exp.data.creationDate
+            small= exp.creationDate
 
-  if !exps.length
+  if !entries.length
     p No experiments found.
 
   if nextPageToken

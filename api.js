@@ -21,12 +21,7 @@ function getExps(token) {
         },
         startToken: token
     };
-    return datastore.exp.runQuery(query).then(function(entities, cursor) {
-        return {
-            exps: entities,
-            nextPageToken: cursor
-        };
-    });
+    return datastore.exp.runQuery(query);
 }
 
 /**
@@ -49,19 +44,19 @@ function createExp(passcode) {
         var expData = {
             creationDate: new Date()
         };
-        return datastore.exp.create(expData).then((expId) => {
+        return datastore.exp.create(expData).then((exp) => {
             var partDataList = [1, 2, 3].map(function(id) {
                 return {
-                    experimentId: expId,
+                    experimentId: exp.id,
                     stage: 'instruction'
                 };
             });
             return datastore.part.createMultiple(partDataList)
-                .then((partIds) => {
-                    expData.participants = partIds;
-                    return datastore.exp.update(expId, expData)
-                        .then(function(entity) {
-                            return expId;
+                .then((parts) => {
+                    exp.participants = parts.map((part) => part.id);
+                    return datastore.exp.update(exp)
+                        .then(function() {
+                            return exp.id;
                         });
                 });
         });
@@ -121,17 +116,17 @@ function validateComprehensionTest(id, answers) {
             part.balance = 0;
             part.readyForGame = false;
 
-            return datastore.part.update(id, part).then(() => {
+            return datastore.part.update(part).then(() => {
                 return loadFullExp(part.experimentId).then((fullExp) => {
                     if (
                         fullExp.parts.reduce(
                             (allReady, part) => (
-                                allReady && part.data.stage == stageGame
+                                allReady && part.stage == stageGame
                             ), true
                         )
                     ) {
                         fullExp.parts.forEach((part) => {
-                            part.data.readyForGame = true;
+                            part.readyForGame = true;
                         });
                         return datastore.part.updateMultiple(fullExp.parts);
                     }

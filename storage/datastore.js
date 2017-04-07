@@ -10,6 +10,60 @@ const kindExperiment = 'experiment';
 const kindParticipant = 'participant';
 // [END config]
 
+// Translates from Datastore's entity format to
+// the format expected by the application.
+//
+// Datastore format:
+//   {
+//     key: [kind, id],
+//     data: {
+//       property: value
+//     }
+//   }
+//
+// Application format:
+//   {
+//     id: id,
+//     property: value
+//   }
+function fromDatastore(obj) {
+    obj.data.id = obj.key.id;
+    return obj.data;
+}
+
+// Translates from the application's format to the datastore's
+// entity format. Does not translate the key.
+//
+// Application format:
+//   {
+//     id: id,
+//     property: value,
+//     unindexedProperty: value
+//   }
+//
+// Datastore extended format:
+//   [
+//     {
+//       name: property,
+//       value: value
+//       excludeFromIndexes: false
+//     }
+//   ]
+function toDatastore(obj) {
+    let results = [];
+    Object.keys(obj).forEach((k) => {
+        if (k == 'id' || obj[k] === undefined) {
+            return;
+        }
+        results.push({
+            name: k,
+            value: obj[k],
+            excludeFromIndexes: false
+        });
+    });
+    return results;
+}
+
 class PromiseOrientedStorage {
     constructor(kind) {
         this.kind = kind;
@@ -35,8 +89,12 @@ class PromiseOrientedStorage {
                     nextQuery.moreResults !== Datastore.NO_MORE_RESULTS ?
                     nextQuery.endCursor : false;
 
-                // TODO hasMore is incorrect;
-                resolve(entities, hasMore);
+                var entries = entities.map(fromDatastore);
+
+                resolve({
+                    entries,
+                    nextPageToken: hasMore
+                });
             });
         });
     }
@@ -44,7 +102,7 @@ class PromiseOrientedStorage {
     create(data) {
         var entity = {
             key: ds.key(this.kind),
-            data: data
+            data: toDatastore(data)
         };
 
         return new Promise(function(resolve, reject) {
@@ -54,7 +112,7 @@ class PromiseOrientedStorage {
                     if (err)
                         reject(err);
                     else {
-                        resolve(entity.key.id);
+                        resolve(fromDatastore(entity));
                     }
                 }
             );
@@ -66,7 +124,7 @@ class PromiseOrientedStorage {
         var entities = dataList.map(function(data) {
             return {
                 key: ds.key(kind),
-                data: data
+                data: toDatastore(data)
             };
         });
         return new Promise(function(resolve, reject) {
@@ -76,9 +134,7 @@ class PromiseOrientedStorage {
                     if (err)
                         reject(err);
                     else
-                        resolve(entities.map((entity) =>
-                            entity.key.id
-                        ));
+                        resolve(entities.map(fromDatastore));
                 }
             );
         });
@@ -91,7 +147,7 @@ class PromiseOrientedStorage {
                 if (err)
                     reject(err);
                 else if (entity) {
-                    resolve(entity.data);
+                    resolve(fromDatastore(entity));
                 } else
                     reject({
                         code: 404,
@@ -108,20 +164,15 @@ class PromiseOrientedStorage {
                 if (err)
                     reject(err);
                 else
-                    resolve(entities.map((entity) => {
-                        return {
-                            id: entity.key.id,
-                            data: entity.data
-                        }
-                    }));
+                    resolve(entities.map(fromDatastore));
             });
         });
     }
 
-    update(id, data) {
+    update(entry) {
         var entity = {
-            key: this.getKey(id),
-            data: data
+            key: this.getKey(entry.id),
+            data: toDatastore(entry)
         }
 
         return new Promise(function(resolve, reject) {
@@ -142,7 +193,7 @@ class PromiseOrientedStorage {
             return {
                 key: this.getKey(entry.id),
                 method: 'update',
-                data: entry.data
+                data: toDatastore(entry)
             }
         });
         return new Promise(function(resolve, reject) {
