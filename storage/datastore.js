@@ -80,14 +80,14 @@ class PromiseOrientedStorage {
     }
 
     toEntity(entry) {
-        let result = {
-            data: toDatastore(data, this.nonIndexed)
-        };
+        let result = {};
         if (entry.id === undefined) {
             result.key = ds.key(this.kind);
         } else {
             result.key = this.getKey(entry.id);
         }
+        result.data = toDatastore(entry, this.nonIndexed);
+        return result;
     }
 
     runQuery(query) {
@@ -134,7 +134,7 @@ class PromiseOrientedStorage {
     }
 
     createMultiple(entries) {
-        var entities = entries.map(this.toEntity);
+        var entities = entries.map((entry) => (this.toEntity(entry)));
         return new Promise(function(resolve, reject) {
             ds.insert(
                 entities,
@@ -194,7 +194,7 @@ class PromiseOrientedStorage {
     }
 
     updateMultiple(entries) {
-        var entities = entries.map(toEntity);
+        var entities = entries.map((entry) => (this.toEntity(entry)));
         return new Promise(function(resolve, reject) {
             ds.update(
                 entities,
