@@ -207,8 +207,13 @@ class PromiseOrientedStorage {
     }
 }
 
-const exp = new PromiseOrientedStorage(kindExperiment, []);
-const part = new PromiseOrientedStorage(kindParticipant, []);
+const exp = new PromiseOrientedStorage(kindExperiment, [
+    'participants'
+]);
+
+const part = new PromiseOrientedStorage(kindParticipant, [
+    'contributions'
+]);
 
 // [START exports]
 module.exports = {
