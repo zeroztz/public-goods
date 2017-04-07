@@ -98,6 +98,7 @@ function loadFullExp(expId) {
  * Validates answer of comprehension test.
  */
 function validateComprehensionTest(id, answers) {
+    var missCount = 0;
     return datastore.part.read(id).then((part) => {
         if (part.stage != stageInstruction) {
             return new Promise((resolve, reject) => {
@@ -107,7 +108,6 @@ function validateComprehensionTest(id, answers) {
                 });
             });
         }
-        var missCount = 0;
         comprehension.questions.forEach(function(question) {
             if (answers[question.name] != question.answer) {
                 ++missCount;
@@ -121,36 +121,26 @@ function validateComprehensionTest(id, answers) {
             part.balance = 0;
             part.readyForGame = false;
 
-            return loadFullExp(part.experimentId).then((fullExp) => {
-                if (
-                    fullExp.parts.reduce(
-                        (allReady, part) => (
-                            allReady && part.data.stage == stageGame
-                        ), true
-                    )
-                ) {
-                    console.log('here');
-                    fullExp.parts.map((part) => {
-                        part.readyForgame = true;
-                    });
-                    datastore.part.updateMultiple(fullExp.parts).then(() => {
-                        return {
-                            missCount
-                        }
-                    });
-                } else {
-                    return datastore.part.update(id, part).then(() => {
-                        return {
-                            missCount
-                        }
-                    });
-                }
-
+            return datastore.part.update(id, part).then(() => {
+                return loadFullExp(part.experimentId).then((fullExp) => {
+                    if (
+                        fullExp.parts.reduce(
+                            (allReady, part) => (
+                                allReady && part.data.stage == stageGame
+                            ), true
+                        )
+                    ) {
+                        fullExp.parts.forEach((part) => {
+                            part.data.readyForGame = true;
+                        });
+                        return datastore.part.updateMultiple(fullExp.parts);
+                    }
+                });
             });
-        } else {
-            return {
-                missCount
-            }
+        }
+    }).then(() => {
+        return {
+            missCount
         }
     });
 }

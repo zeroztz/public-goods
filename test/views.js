@@ -227,7 +227,9 @@ describe(`[views]`, () => {
                     .end(done);
             });
 
-            after((done) => {
+            it(`should let all particiants to finish comprehension test`, () => {
+                /*
+                 * TODO: use blocking closure to make following work
                 partIds.map((id) => {
                     if (id != samplePartId) {
                         api.validateComprehensionTest(
@@ -235,15 +237,40 @@ describe(`[views]`, () => {
                                 q1: 'c',
                                 q2: 'b'
                             }
-                        ).then((missCount) => {
-                            missCount.should.be.zero();
+                        ).then((result) => {
+                            result.should.have.property('missCount').which.equal(0);
                         });
                     }
                 });
                 done();
+                */
+                return api.validateComprehensionTest(
+                    partIds[1], {
+                        q1: 'c',
+                        q2: 'b'
+                    }
+                ).then((result) => {
+                    result.should.have.property('missCount').which.equal(0);
+                    return api.validateComprehensionTest(
+                        partIds[2], {
+                            q1: 'c',
+                            q2: 'b'
+                        }
+                    ).then((result) => {
+                        result.should.have.property('missCount').which.equal(0);
+                    });
+                });
             });
         });
 
-        describe(`/game`, () => {});
+        describe(`/game`, () => {
+            it(`should show game play`, (done) => {
+                utils.getRequest(config)
+                    .get(`/parts/${samplePartId}/game`)
+                    .expect(200)
+                    .expect(/How many of your .* points would you like to transfer to the group fund?/)
+                    .end(done);
+            });
+        });
     });
 });
