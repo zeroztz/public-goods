@@ -96,11 +96,9 @@ function validateComprehensionTest(id, answers) {
     var missCount = 0;
     return datastore.part.read(id).then((part) => {
         if (part.stage != stageInstruction) {
-            return new Promise((resolve, reject) => {
-                reject({
-                    code: 403,
-                    message: 'You have already finished comprehension test'
-                });
+            return Promise.reject({
+                code: 403,
+                message: 'You have already finished comprehension test'
             });
         }
         comprehension.questions.forEach(function(question) {
@@ -140,12 +138,67 @@ function validateComprehensionTest(id, answers) {
     });
 }
 
+function submitContribution(id, contribution) {
+    let result = {};
+    return datastore.part.read(id).then((part) => {
+        if (part.stage != stageGame) {
+            return Promise.reject('not in game stage');
+        }
+        if (part.contributions.length != part.finishedRound) {
+            return Promise.reject({
+                code: 403,
+                message: "You have already made contribution this round"
+            });
+        }
+        part.contributions.push(parseInt(contribution, 10));
+        return datastore.part.update(part).then(() => {
+            return loadFullExp(part.experimentId);
+        });
+    }).then((fullExp) => {
+        if (!fullExp.parts.reduce((allFinished, part) => {
+                return allFinished &&
+                    part.finishedRound + 1 == part.contributions.length;
+            }, true)) {
+            return Promise.reject('not all finished');
+        }
+        result.participantContributions = fullExp.parts.map(
+            (part) => {
+                var contributions = part.contributions[part.finishedRound];
+                part.balance += 10 - contributions;
+                return contributions;
+            });
+
+        result.groupFund =
+            result.participantContributions.reduce((sum, contribution) =>
+                sum + contribution);
+        result.groupEarning =
+            result.groupFund * 2;
+        result.participantBalances = fullExp.parts.map((part) => {
+            part.balance += result.groupEarning / fullExp.parts.length;
+            ++part.finishedRound;
+            part.viewGameResult = true;
+            return part.balance;
+        });
+        if (fullExp.exp.results === undefined) {
+            fullExp.exp.results = [result];
+        } else {
+            fullExp.exp.results.push(result);
+        }
+        return datastore.exp.update(fullExp.exp).then(() => {
+            return datastore.part.updateMultiple(fullExp.parts);
+        });
+    }).then(() => {
+        return result;
+    });
+}
+
 // [START exports]
 module.exports = {
     getExps,
     createExp,
     readExp,
     readPart,
-    validateComprehensionTest
+    validateComprehensionTest,
+    submitContribution
 };
 // [END exports]

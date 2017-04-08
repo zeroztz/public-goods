@@ -16,7 +16,8 @@ describe(`[views]`, () => {
 
     let expId;
     let partIds;
-    let samplePartId;
+    let firstPartId;
+    let lastPartId;
 
     before(() => {
         return api.createExp('pg').then((id) => {
@@ -31,23 +32,8 @@ describe(`[views]`, () => {
                     part.should.be.a.Number();
                     return part;
                 });
-                samplePartId = partIds[0];
-            });
-        });
-    });
-
-    describe.skip('promise', () => {
-        it('', (done) => {
-            new Promise((resolve, reject) => {
-                resolve(2);
-            }).then(resolve => {
-                return new Promise((resolve, reject) => {
-                    reject(1);
-                });
-            }).catch((err) => {
-                err.should.equal(1);
-            }).then(() => {
-                done();
+                firstPartId = partIds[0];
+                lastPartId = partIds[1];
             });
         });
     });
@@ -146,15 +132,15 @@ describe(`[views]`, () => {
         describe(`/instruction`, () => {
             it(`../ should redirect to /parts/:part/instruction`, (done) => {
                 utils.getRequest(config)
-                    .get(`/parts/${samplePartId}`)
+                    .get(`/parts/${firstPartId}`)
                     .expect(302)
-                    .expect('Location', `/parts/${samplePartId}/instruction`)
+                    .expect('Location', `/parts/${firstPartId}/instruction`)
                     .end(done);
             });
 
             it(`should show instructions`, (done) => {
                 utils.getRequest(config)
-                    .get(`/parts/${samplePartId}/instruction`)
+                    .get(`/parts/${firstPartId}/instruction`)
                     .expect(200)
                     .expect(/<h3>Instructions<\/h3>/)
                     .expect(/multiplier/)
@@ -164,34 +150,34 @@ describe(`[views]`, () => {
         });
 
         describe(`/comprehension`, () => {
-            it(`../game should not able to go to game directly`, (done) => {
+            it(`GET ../game should not go to game directly`, (done) => {
                 utils.getRequest(config)
-                    .get(`/parts/${samplePartId}/game`)
+                    .get(`/parts/${firstPartId}/game`)
                     .expect(302)
-                    .expect('Location', `/parts/${samplePartId}`)
+                    .expect('Location', `/parts/${firstPartId}`)
                     .end(done);
             });
 
-            it(`../game should not able to post contribution`, (done) => {
+            it(`POST ../game should not submit contribution`, (done) => {
                 utils.getRequest(config)
-                    .post(`/parts/${samplePartId}/game`)
+                    .post(`/parts/${firstPartId}/game`)
                     .expect(302)
-                    .expect('Location', `/parts/${samplePartId}`)
+                    .expect('Location', `/parts/${firstPartId}`)
                     .end(done);
             });
 
-            it(`should show comprehension test`, (done) => {
+            it(`GET should show comprehension test`, (done) => {
                 utils.getRequest(config)
-                    .get(`/parts/${samplePartId}/comprehension`)
+                    .get(`/parts/${firstPartId}/comprehension`)
                     .expect(200)
                     .expect(/<h3>Comprehension Test<\/h3>/)
                     .expect(/method="POST"/)
                     .end(done);
             });
 
-            it(`should not pass when there is any incorrect answer`, (done) => {
+            it(`POST should not pass when there is any incorrect answer`, (done) => {
                 utils.getRequest(config)
-                    .post(`/parts/${samplePartId}/comprehension`)
+                    .post(`/parts/${firstPartId}/comprehension`)
                     .send('q1=c')
                     .send('q2=c')
                     .expect(200)
@@ -199,9 +185,9 @@ describe(`[views]`, () => {
                     .end(done);
             });
 
-            it(`should pass when answers are correct`, (done) => {
+            it(`POST should pass when answers are correct`, (done) => {
                 utils.getRequest(config)
-                    .post(`/parts/${samplePartId}/comprehension`)
+                    .post(`/parts/${firstPartId}/comprehension`)
                     .send('q1=c')
                     .send('q2=b')
                     .expect(200)
@@ -209,9 +195,9 @@ describe(`[views]`, () => {
                     .end(done);
             });
 
-            it('should not allow you submit it again if you have already passed', (done) => {
+            it(`POST should not allow you submit it again once you passed`, (done) => {
                 utils.getRequest(config)
-                    .post(`/parts/${samplePartId}/comprehension`)
+                    .post(`/parts/${firstPartId}/comprehension`)
                     .send('q1=c')
                     .send('q2=c')
                     .expect(403)
@@ -219,20 +205,18 @@ describe(`[views]`, () => {
                     .end(done);
             });
 
-            it(`../game should wait for other participants`, (done) => {
+            it(`GET ../game should wait for other participants`, (done) => {
                 utils.getRequest(config)
-                    .get(`/parts/${samplePartId}/game`)
+                    .get(`/parts/${firstPartId}/game`)
                     .expect(200)
                     .expect(/Please wait for all paritipants to finish comprehension test/)
                     .end(done);
             });
 
-            it(`should let all particiants to finish comprehension test`, () => {
-                /*
-                 * TODO: use blocking closure to make following work
-                partIds.map((id) => {
-                    if (id != samplePartId) {
-                        api.validateComprehensionTest(
+            it(`POST should let other particiants to finish comprehension test`, () => {
+                return Promise.all(partIds.map((id) => {
+                    if (id != firstPartId) {
+                        return api.validateComprehensionTest(
                             id, {
                                 q1: 'c',
                                 q2: 'b'
@@ -241,34 +225,56 @@ describe(`[views]`, () => {
                             result.should.have.property('missCount').which.equal(0);
                         });
                     }
-                });
-                done();
-                */
-                return api.validateComprehensionTest(
-                    partIds[1], {
-                        q1: 'c',
-                        q2: 'b'
-                    }
-                ).then((result) => {
-                    result.should.have.property('missCount').which.equal(0);
-                    return api.validateComprehensionTest(
-                        partIds[2], {
-                            q1: 'c',
-                            q2: 'b'
-                        }
-                    ).then((result) => {
-                        result.should.have.property('missCount').which.equal(0);
-                    });
-                });
+                }));
             });
         });
 
         describe(`/game`, () => {
-            it(`should show game play`, (done) => {
+            it(`GET should show game play`, (done) => {
                 utils.getRequest(config)
-                    .get(`/parts/${samplePartId}/game`)
+                    .get(`/parts/${firstPartId}/game`)
                     .expect(200)
                     .expect(/How many of your .* points would you like to transfer to the group fund?/)
+                    .end(done);
+            });
+            it(`POST should submit contribution and wait others`, (done) => {
+                utils.getRequest(config)
+                    .post(`/parts/${firstPartId}/game`)
+                    .send('contribution=10')
+                    .expect(200)
+                    .expect(/Please wait for all paritipants to finish this round./)
+                    .end(done);
+            });
+            it(`POST should not allow submit contribution again`, (done) => {
+                utils.getRequest(config)
+                    .post(`/parts/${firstPartId}/game`)
+                    .send('contribution=8')
+                    .expect(403)
+                    .expect(/You have already made contribution this round/)
+                    .end(done);
+            });
+            it(`POST should let other participants to submit contribution`, () => {
+                return Promise.all(partIds.map((id) => {
+                    if (id != firstPartId && id != lastPartId) {
+                        return api.submitContribution(id, 8).catch((err) => {
+                            err.should.equal('not all finished');
+                        });
+                    }
+                }));
+            });
+            it(`POST should show result when last participant submitted contribution`, (done) => {
+                utils.getRequest(config)
+                    .post(`/parts/${lastPartId}/game`)
+                    .send('contribution=6')
+                    .expect(200)
+                    .expect(/Participant 20/)
+                    .end(done);
+            });
+            it(`GET should show result after all participants submitted contribution`, (done) => {
+                utils.getRequest(config)
+                    .get(`/parts/${firstPartId}/game`)
+                    .expect(200)
+                    .expect(/Participant 16/)
                     .end(done);
             });
         });

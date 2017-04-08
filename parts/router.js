@@ -5,7 +5,6 @@ const bodyParser = require('body-parser');
 const api = require(`../api`);
 
 // TODO: remove
-const datastore = require('./datastore');
 const comprehension = require('../data/comprehension');
 const stageInstruction = 'instruction';
 const stageGame = 'game';
@@ -113,8 +112,9 @@ router.get('/:part/game', (req, res, next) => {
         } else if (!part.readyForGame) {
             res.render('parts/comprehension_wait.pug');
         } else if (part.viewGameResult) {
-            // TODO(ztz): store result in exp and display it here.
-            next(new Error("result not ready"));
+            return api.readExp(part.experimentId).then((exp) => {
+                res.render('parts/game_result.pug', exp.results[exp.results.length - 1]);
+            });
         } else {
             res.render('parts/game_play.pug');
         }
@@ -128,72 +128,18 @@ router.get('/:part/game', (req, res, next) => {
  *
  * Receives contribution of a round.
  */
-function computeResult(err, fullExperiment, res, next) {
-    if (err) {
-        next(err);
-        return;
-    }
-    var participants = fullExperiment.participants;
-    var allFinished =
-        participants.reduce((allPreviousFinished, participant) => {
-            return allPreviousFinished &&
-                participant.data.finishedRound + 1 ==
-                participant.data.contributions.length;
-        }, true);
-    if (!allFinished) {
-        res.render('parts/game_wait.pug');
-        return;
-    }
-    var result = {
-        participantContributions: participants.map((participant) =>
-            participant.data.contributions[participant.data.finishedRound])
-    };
-    result.groupFund =
-        result.participantContributions.reduce((sum, contribution) =>
-            sum + contribution);
-    result.groupEarning =
-        result.groupFund * 2;
-    result.participantBalances = participants.map((participant) => {
-        participant.data.balance += result.groupEarning / participants.length;
-        ++participant.data.finishedRound;
-        participant.data.viewGameResult = true;
-        return participant.data.balance;
-    });
-    console.log(result);
-    fullExperiment.experiment.results.push(result);
-    datastore.updateFullExperiment(participants, (err) => {
-        if (err) {
-            next(err);
-            return;
-        }
-        res.render('parts/game_result.pug', result);
-    });
-}
 router.post('/:part/game', (req, res, next) => {
-    if (req.pg.part.stage != stageGame) {
-        res.redirect(`${req.baseUrl}/${req.params.part}`);
-        return;
-    }
-    const form = req.body;
-    if (req.pg.part.contributions.length !=
-        req.pg.part.finishedRound) {
-        next(new Error("You have already made contribution this round"));
-    } else {
-        console.log("a", form.contribution);
-        req.pg.part.contributions.push(parseInt(form.contribution));
-        console.log("b", req.pg.part.contributions[0]);
-    }
-    datastore.saveParticipant(req.params.part, req.pg.part, (err) => {
-        if (err) {
-            next(err);
-            return;
-        }
-        datastore.loadFullExperiment(req.pg.part.experimentId,
-            (err, fullExperiment) => {
-                console.log(fullExperiment);
-                computeResult(err, fullExperiment, res, next);
-            });
-    });
+    api.submitContribution(req.params.part, req.body.contribution).then(
+        (result) => {
+            res.render('parts/game_result.pug', result);
+        }, (err) => {
+            if (err == 'not in game stage')
+                res.redirect(`${req.baseUrl}/${req.params.part}`);
+            else if (err == 'not all finished')
+                res.render('parts/game_wait.pug');
+            else
+                next(err);
+        });
 });
 
 
