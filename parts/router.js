@@ -4,11 +4,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const api = require(`../api`);
 
-// TODO: remove
 const comprehension = require('../data/comprehension');
 const stageInstruction = 'instruction';
 const stageGame = 'game';
-// end TODO
 
 const router = express.Router();
 
@@ -40,29 +38,6 @@ router.get('/:part/instruction', (req, res, next) => {
  */
 router.get('/:part/comprehension', (req, res, next) => {
     res.render('parts/comprehension.pug', comprehension);
-});
-
-/**
- * Loads participant on all /:part*.
- */
-// TODO remove this part when pg is not used anymore.
-router.use('/:part*', (req, res, next) => {
-    api.readPart(req.params.part).then((result) => {
-        if (!result) {
-            next({
-                code: 404,
-                message: 'Not found'
-            });
-            return;
-        }
-        if (req.pg === undefined) {
-            req.pg = {};
-        }
-        req.pg.part = result;
-        next();
-    }).catch(function(err) {
-        next(err);
-    });
 });
 
 /**
