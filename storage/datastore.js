@@ -41,6 +41,13 @@ function fromDatastore(obj) {
 //     unindexedProperty: value
 //   }
 //
+// Datastore entity format:
+//   {
+//     id: id,
+//     property: value,
+//     unindexedProperty: value
+//   }
+//
 // Datastore extended format:
 //   [
 //     {
@@ -54,7 +61,11 @@ function fromDatastore(obj) {
 //       excludeFromIndexes: true
 //     }
 //   ]
+//
 function toDatastore(obj, nonIndexed) {
+    /*
+     * TODO use extended format later
+     *
     let results = [];
     Object.keys(obj).forEach((k) => {
         if (k == 'id' || obj[k] === undefined) {
@@ -66,7 +77,8 @@ function toDatastore(obj, nonIndexed) {
             excludeFromIndexes: nonIndexed.indexOf(k) != -1
         });
     });
-    return results;
+    */
+    return obj;
 }
 
 class PromiseOrientedStorage {

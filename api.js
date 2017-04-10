@@ -77,11 +77,8 @@ function readPart(id) {
 function loadFullExp(expId) {
     return datastore.exp.read(expId).then((exp) => {
         var fullExp = {
-            exp: {
-                id: expId,
-                data: exp
-            }
-        }
+            exp
+        };
         return datastore.part.readMultiple(exp.participants).then((parts) => {
             fullExp.parts = parts;
             return fullExp;
@@ -115,20 +112,20 @@ function validateComprehensionTest(id, answers) {
             part.readyForGame = false;
 
             return datastore.part.update(part).then(() => {
-                return loadFullExp(part.experimentId).then((fullExp) => {
-                    if (
-                        fullExp.parts.reduce(
-                            (allReady, part) => (
-                                allReady && part.stage == stageGame
-                            ), true
-                        )
-                    ) {
-                        fullExp.parts.forEach((part) => {
-                            part.readyForGame = true;
-                        });
-                        return datastore.part.updateMultiple(fullExp.parts);
-                    }
-                });
+                return loadFullExp(part.experimentId);
+            }).then((fullExp) => {
+                if (
+                    fullExp.parts.reduce(
+                        (allReady, part) => (
+                            allReady && part.stage == stageGame
+                        ), true
+                    )
+                ) {
+                    fullExp.parts.forEach((part) => {
+                        part.readyForGame = true;
+                    });
+                    return datastore.part.updateMultiple(fullExp.parts);
+                }
             });
         }
     }).then(() => {
@@ -192,6 +189,22 @@ function submitContribution(id, contribution) {
     });
 }
 
+function readyForNextRound(id) {
+    return datastore.part.read(id).then((part) => {
+        if (part.stage != stageGame) {
+            return Promise.reject('not in game stage');
+        }
+        if (!part.viewGameResult) {
+            return Promise.reject({
+                code: 403,
+                message: "You cannot start a new round without viewing any result."
+            });
+        }
+        part.viewGameResult = false;
+        return datastore.part.update(part);
+    })
+}
+
 // [START exports]
 module.exports = {
     getExps,
@@ -199,6 +212,7 @@ module.exports = {
     readExp,
     readPart,
     validateComprehensionTest,
-    submitContribution
+    submitContribution,
+    readyForNextRound
 };
 // [END exports]

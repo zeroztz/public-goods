@@ -117,6 +117,21 @@ router.post('/:part/game', (req, res, next) => {
         });
 });
 
+/**
+ * POST /:part/game/resul
+ *
+ * Receives signal that participant is ready for next round.
+ */
+router.post('/:part/game/result', (req, res, next) => {
+    api.readyForNextRound(req.params.part).then(() => {
+        res.redirect(`${req.baseUrl}/${req.params.part}/game`);
+    }, (err) => {
+        if (err == 'not in game stage')
+            res.redirect(`${req.baseUrl}/${req.params.part}`);
+        else
+            next(err);
+    });
+});
 
 /**
  * Errors on "/*" routes.

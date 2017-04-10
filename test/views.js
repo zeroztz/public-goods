@@ -268,6 +268,7 @@ describe(`[views]`, () => {
                     .send('contribution=6')
                     .expect(200)
                     .expect(/Participant 20/)
+                    .expect(/<form action="result" method="POST"/)
                     .end(done);
             });
             it(`GET should show result after all participants submitted contribution`, (done) => {
@@ -276,6 +277,45 @@ describe(`[views]`, () => {
                     .expect(200)
                     .expect(/Participant 16/)
                     .end(done);
+            });
+            it(`POST /result should redirect to game and show next round`, (done) => {
+                utils.getRequest(config)
+                    .post(`/parts/${firstPartId}/game/result`)
+                    .expect(302)
+                    .expect('Location', `/parts/${firstPartId}/game`)
+                    .end((err) => {
+                        if (err)
+                            return done(err);
+                        utils.getRequest(config)
+                            .get(`/parts/${firstPartId}/game`)
+                            .expect(200)
+                            .expect(/How many of your .* points would you like to transfer to the group fund?/)
+                            .end(done);
+                    });
+            });
+
+            it(`should able to finishe 2nd round`, () => {
+                return Promise.all(partIds.map((id) => {
+                    if (id != firstPartId) {
+                        return api.readyForNextRound(id);
+                    }
+                })).then(() => {
+                    return Promise.all(partIds.map((id) => {
+                        if (id != lastPartId) {
+                            return api.submitContribution(id, 8);
+                        }
+                    }));
+                });
+                /*.then(() => {
+                                    return utils.getRequest(config)
+                                        .post(`/parts/${lastPartId}/game`)
+                                        .send('contribution=6')
+                                        .expect(200)
+                                        .expect(/Participant 20/)
+                                        .expect(/sssss/)
+                                        .expect(/<form action="result" method="POST"/);
+                                });
+                                */
             });
         });
     });
