@@ -20,7 +20,10 @@ describe(`[views]`, () => {
     let lastPartId;
 
     before(() => {
-        return api.createExp('pg').then((id) => {
+        return api.createExp({
+            passcode: 'pg',
+            partSize: '3'
+        }).then((id) => {
             id.should.not.be.NaN();
             id.should.not.be.Infinity();
             expId = id;
@@ -67,7 +70,6 @@ describe(`[views]`, () => {
             it('should reject without passcode.', () => {
                 return utils.getRequest(config)
                     .post('/exps/create')
-                    .send('passcode=randomString')
                     .expect(401);
             });
 
@@ -81,7 +83,11 @@ describe(`[views]`, () => {
             it('should create experiment with correct passcode.', () => {
                 return utils.getRequest(config)
                     .post(`/exps/create`)
-                    .send(`passcode=pg`)
+                    .type('form')
+                    .send({
+                        passcode: 'pg',
+                        partSize: '3'
+                    })
                     .expect(302)
                     .expect((response) => {
                         const location = response.headers.location;
@@ -166,8 +172,11 @@ describe(`[views]`, () => {
             it(`POST should not pass when there is any incorrect answer`, () => {
                 return utils.getRequest(config)
                     .post(`/parts/${firstPartId}/comprehension`)
-                    .send('q1=c')
-                    .send('q2=c')
+                    .type('form')
+                    .send({
+                        q1: 'c',
+                        q2: 'c'
+                    })
                     .expect(200)
                     .expect(/You seem to have missed at least one of the comprehension check questions./)
             });
@@ -175,8 +184,11 @@ describe(`[views]`, () => {
             it(`POST should pass when answers are correct`, () => {
                 return utils.getRequest(config)
                     .post(`/parts/${firstPartId}/comprehension`)
-                    .send('q1=c')
-                    .send('q2=b')
+                    .type('form')
+                    .send({
+                        q1: 'c',
+                        q2: 'b'
+                    })
                     .expect(200)
                     .expect(/You got all the comprehension questions correct/)
             });
@@ -184,8 +196,11 @@ describe(`[views]`, () => {
             it(`POST should not allow you submit it again once you passed`, () => {
                 return utils.getRequest(config)
                     .post(`/parts/${firstPartId}/comprehension`)
-                    .send('q1=c')
-                    .send('q2=c')
+                    .type('form')
+                    .send({
+                        q1: 'c',
+                        q2: 'c'
+                    })
                     .expect(403)
                     .expect('You have already finished comprehension test')
             });

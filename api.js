@@ -6,6 +6,8 @@ const comprehension = require('./data/comprehension');
 const stageInstruction = 'instruction';
 const stageGame = 'game';
 
+const kMaxPartSize = 10;
+
 function getExps(token) {
     // Lists all experiments in the Datastore sorted desending by creation time.
     // The ``limit`` argument determines the maximum amount of results to
@@ -29,20 +31,31 @@ function getExps(token) {
  *
  * It will reject if passcode is incorrect.
  */
-function createExp(passcode) {
+function createExp(expConfig) {
     return new Promise(function(resolve, reject) {
-        if (passcode == "pg")
-            resolve(true);
-        else
+        if (expConfig.passcode != "pg")
             reject({
                 code: 401,
                 message: 'unauthorized'
             });
-    }).then(() => {
+
+        var setting = {
+            partSize: parseInt(expConfig.partSize, 10)
+        }
+        if (!setting.partSize === NaN ||
+            !(setting.partSize > 1 && setting.partSize <= kMaxPartSize)) {
+            reject({
+                code: 400,
+                message: 'Number of participants is invalid.'
+            });
+        }
+        resolve(setting);
+    }).then((setting) => {
         // Creates a new experiment and corresponding participants with current date.
         // Return new experiment id if no error occurs.
         var expData = {
-            creationDate: new Date()
+            creationDate: new Date(),
+            setting
         };
         return datastore.exp.create(expData).then((exp) => {
             var partDataList = [1, 2, 3].map(function(id) {

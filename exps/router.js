@@ -51,7 +51,7 @@ router.get('/create', (req, res) => {
  */
 // [START create_post]
 router.post('/create', (req, res, next) => {
-    api.createExp(req.body.passcode).then(function(id) {
+    api.createExp(req.body).then(function(id) {
         res.redirect(`${req.baseUrl}/${id}`);
     }).catch(function(err) {
         next(err);

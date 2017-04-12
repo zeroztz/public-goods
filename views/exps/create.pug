@@ -3,8 +3,12 @@ extends ../base.pug
 block content
   h3 Creat Experiment
   form(method="POST")
-    .form-group
-      label(for="passcode") Passcode
-      input.form-control(type="password", name="passcode", id="passcode", value=credential.passcode)
-    .form-group
-    button.btn.btn-success(type="submit") Create
+    fieldset
+      legend Passcode
+      input(type="text" name="passcode" value=experiment.passcode)
+
+    fieldset
+      legend Number of participants
+      input(type="number" name="partSize" value=experiment.partSize)
+
+    input(type="submit" value="Create")
