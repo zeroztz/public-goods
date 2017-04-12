@@ -58,12 +58,13 @@ function createExp(expConfig) {
             setting
         };
         return datastore.exp.create(expData).then((exp) => {
-            var partDataList = [1, 2, 3].map(function(id) {
-                return {
+            var partDataList = [];
+            for (int i = 0; i < exp.setting.partSize; ++i) {
+                partDataList.push({
                     experimentId: exp.id,
                     stage: 'instruction'
-                };
-            });
+                });
+            };
             return datastore.part.createMultiple(partDataList)
                 .then((parts) => {
                     exp.participants = parts.map((part) => part.id);
