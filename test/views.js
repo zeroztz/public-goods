@@ -191,6 +191,7 @@ describe(`[views]`, () => {
                     })
                     .expect(200)
                     .expect(/You got all the comprehension questions correct/)
+                    .expect(/<a href=".\//)
             });
 
             it(`POST should not allow you submit it again once you passed`, () => {
@@ -264,7 +265,7 @@ describe(`[views]`, () => {
                     .send('contribution=6')
                     .expect(200)
                     .expect(/Participant 20/)
-                    .expect(/<form action="result" method="POST"/);
+                    .expect(/<form action="game\/result" method="POST"/);
             });
             it(`GET should show result after all participants submitted contribution`, () => {
                 return utils.getRequest(config)
@@ -304,7 +305,7 @@ describe(`[views]`, () => {
                         .send('contribution=8')
                         .expect(200)
                         .expect(/Participant 38/)
-                        .expect(/<form action="result" method="POST"/);
+                        .expect(/<form action="game\/result" method="POST"/);
                 });
 
             });

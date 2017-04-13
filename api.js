@@ -59,7 +59,7 @@ function createExp(expConfig) {
         };
         return datastore.exp.create(expData).then((exp) => {
             var partDataList = [];
-            for (int i = 0; i < exp.setting.partSize; ++i) {
+            for (var i = 0; i < exp.setting.partSize; ++i) {
                 partDataList.push({
                     experimentId: exp.id,
                     stage: 'instruction'
