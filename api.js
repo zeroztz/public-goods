@@ -3,8 +3,7 @@
 const datastore = require('./storage/datastore');
 
 const comprehension = require('./data/comprehension');
-const stageInstruction = 'instruction';
-const stageGame = 'game';
+const stage = require('./stage');
 
 const kMaxPartSize = 10;
 
@@ -106,7 +105,7 @@ function loadFullExp(expId) {
 function validateComprehensionTest(id, answers) {
     var missCount = 0;
     return datastore.part.read(id).then((part) => {
-        if (part.stage != stageInstruction) {
+        if (part.stage != stage.INSTRUCTION) {
             return Promise.reject({
                 code: 403,
                 message: 'You have already finished comprehension test'
@@ -118,12 +117,10 @@ function validateComprehensionTest(id, answers) {
             }
         });
         if (missCount == 0) {
-            part.stage = stageGame;
+            part.stage = stage.WAIT_FOR_COMPREHENSION;
             part.finishedRound = 0;
-            part.viewGameResult = false;
             part.contributions = [];
             part.balance = 0;
-            part.readyForGame = false;
 
             return datastore.part.update(part).then(() => {
                 return loadFullExp(part.experimentId);
@@ -131,12 +128,12 @@ function validateComprehensionTest(id, answers) {
                 if (
                     fullExp.parts.reduce(
                         (allReady, part) => (
-                            allReady && part.stage == stageGame
+                            allReady && part.stage == stage.WAIT_FOR_COMPREHENSION
                         ), true
                     )
                 ) {
                     fullExp.parts.forEach((part) => {
-                        part.readyForGame = true;
+                        part.stage = stage.SELECT_CONTRIBUTION;
                     });
                     return datastore.part.updateMultiple(fullExp.parts);
                 }
@@ -152,8 +149,11 @@ function validateComprehensionTest(id, answers) {
 function submitContribution(id, contribution) {
     let result = {};
     return datastore.part.read(id).then((part) => {
-        if (part.stage != stageGame) {
-            return Promise.reject('not in game stage');
+        if (part.stage != stage.SELECT_CONTRIBUTION) {
+            return Promise.reject({
+                code: 403,
+                message: 'not in game stage'
+            });
         }
         if (part.contributions.length != part.finishedRound) {
             return Promise.reject({
@@ -187,7 +187,7 @@ function submitContribution(id, contribution) {
         result.participantBalances = fullExp.parts.map((part) => {
             part.balance += result.groupEarning / fullExp.parts.length;
             ++part.finishedRound;
-            part.viewGameResult = true;
+            part.stage = stage.VIEW_RESULT;
             return part.balance;
         });
         if (fullExp.exp.results === undefined) {
@@ -205,16 +205,13 @@ function submitContribution(id, contribution) {
 
 function readyForNextRound(id) {
     return datastore.part.read(id).then((part) => {
-        if (part.stage != stageGame) {
-            return Promise.reject('not in game stage');
-        }
-        if (!part.viewGameResult) {
+        if (part.stage != stage.VIEW_RESULT) {
             return Promise.reject({
                 code: 403,
                 message: "You cannot start a new round without viewing any result."
             });
         }
-        part.viewGameResult = false;
+        part.stage = stage.SELECT_CONTRIBUTION;
         return datastore.part.update(part);
     })
 }

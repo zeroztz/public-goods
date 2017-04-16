@@ -5,8 +5,7 @@ const bodyParser = require('body-parser');
 const api = require(`../api`);
 
 const comprehension = require('../data/comprehension');
-const stageInstruction = 'instruction';
-const stageGame = 'game';
+const stage = require('../stage');
 
 const router = express.Router();
 
@@ -47,9 +46,9 @@ router.get('/:part/comprehension', (req, res, next) => {
  */
 router.get('/:part', (req, res, next) => {
     api.readPart(req.params.part).then((part) => {
-        if (part.stage == stageInstruction)
+        if (part.stage == stage.INSTRUCTION)
             res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
-        else if (part.stage == stageGame)
+        else if (part.stage == stage.SELECT_CONTRIBUTION)
             res.redirect(`${req.baseUrl}/${req.params.part}/game`);
         else
             next(new Error(`Invalid stage: ${part.stage}`));
@@ -82,16 +81,16 @@ router.post('/:part/comprehension', (req, res, next) => {
  */
 router.get('/:part/game', (req, res, next) => {
     api.readPart(req.params.part).then((part) => {
-        if (part.stage != stageGame) {
-            res.redirect(`${req.baseUrl}/${req.params.part}`);
-        } else if (!part.readyForGame) {
+        if (part.stage == stage.SELECT_CONTRIBUTION) {
+            res.render('parts/game_play.pug');
+        } else if (part.stage == stage.WAIT_FOR_COMPREHENSION) {
             res.render('parts/comprehension_wait.pug');
-        } else if (part.viewGameResult) {
+        } else if (part.stage == stage.VIEW_RESULT) {
             return api.readExp(part.experimentId).then((exp) => {
                 res.render('parts/game_result.pug', exp.results[exp.results.length - 1]);
             });
         } else {
-            res.render('parts/game_play.pug');
+            res.redirect(`${req.baseUrl}/${req.params.part}`);
         }
     }, (err) => {
         next(err);

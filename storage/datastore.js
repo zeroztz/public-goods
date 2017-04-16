@@ -78,6 +78,11 @@ function toDatastore(obj, nonIndexed) {
         });
     });
     */
+    Object.keys(obj).forEach((k) => {
+        if (obj[k] == undefined) {
+            throw(new Error("undefined property of key:" + k));
+        }
+    });
     return obj;
 }
 

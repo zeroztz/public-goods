@@ -157,8 +157,8 @@ describe(`[views]`, () => {
             it(`POST ../game should not submit contribution`, () => {
                 return utils.getRequest(config)
                     .post(`/parts/${firstPartId}/game`)
-                    .expect(302)
-                    .expect('Location', `/parts/${firstPartId}`)
+                    .expect(403)
+                    .expect(/not in game stage/)
             });
 
             it(`GET should show comprehension test`, () => {
