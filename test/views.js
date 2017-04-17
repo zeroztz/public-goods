@@ -128,17 +128,10 @@ describe(`[views]`, () => {
     });
 
     describe(`/parts/:part`, () => {
-        describe(`/instruction`, () => {
-            it(`../ should redirect to /parts/:part/instruction`, () => {
-                return utils.getRequest(config)
-                    .get(`/parts/${firstPartId}`)
-                    .expect(302)
-                    .expect('Location', `/parts/${firstPartId}/instruction`)
-            });
-
+        describe(`[instruction]`, () => {
             it(`should show instructions`, () => {
                 return utils.getRequest(config)
-                    .get(`/parts/${firstPartId}/instruction`)
+                    .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/<h3>Instructions<\/h3>/)
                     .expect(/multiplier/)
@@ -147,14 +140,7 @@ describe(`[views]`, () => {
         });
 
         describe(`/comprehension`, () => {
-            it(`GET ../game should not go to game directly`, () => {
-                return utils.getRequest(config)
-                    .get(`/parts/${firstPartId}/game`)
-                    .expect(302)
-                    .expect('Location', `/parts/${firstPartId}`)
-            });
-
-            it(`POST ../game should not submit contribution`, () => {
+            it(`POST ./game should not submit contribution`, () => {
                 return utils.getRequest(config)
                     .post(`/parts/${firstPartId}/game`)
                     .expect(403)
@@ -206,9 +192,9 @@ describe(`[views]`, () => {
                     .expect('You have already finished comprehension test')
             });
 
-            it(`GET ../game should wait for other participants`, () => {
+            it(`GET ./ should wait for other participants`, () => {
                 return utils.getRequest(config)
-                    .get(`/parts/${firstPartId}/game`)
+                    .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/Please wait for all paritipants to finish comprehension test/)
             });
@@ -229,28 +215,36 @@ describe(`[views]`, () => {
             });
         });
 
-        describe(`/game`, () => {
+        describe(`[game]`, () => {
             it(`GET should show game play`, () => {
                 return utils.getRequest(config)
-                    .get(`/parts/${firstPartId}/game`)
+                    .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/How many of your .* points would you like to transfer to the group fund?/)
+                    .expect(/<form action="game" method="POST"/);
             });
-            it(`POST should submit contribution and wait others`, () => {
+            it(`POST /game should submit contribution and wait others`, () => {
                 return utils.getRequest(config)
                     .post(`/parts/${firstPartId}/game`)
                     .send('contribution=10')
-                    .expect(200)
-                    .expect(/Please wait for all paritipants to finish this round./)
+                    .expect(302)
+                    .expect('Location', `/parts/${firstPartId}`)
+                    .end(() => {
+                        return utils.getRequest(config)
+                            .get(`/parts/${firstPartId}`)
+                            .expect(200)
+                            .expect(/Please wait for all paritipants to finish this round./)
+                            .expect(/<a href="."/)
+                    });
             });
-            it(`POST should not allow submit contribution again`, () => {
+            it(`POST /game should not allow submit contribution again`, () => {
                 return utils.getRequest(config)
                     .post(`/parts/${firstPartId}/game`)
                     .send('contribution=8')
                     .expect(403)
                     .expect(/You have already made contribution this round/);
             });
-            it(`POST should let other participants to submit contribution`, () => {
+            it(`POST /game should let other participants to submit contribution`, () => {
                 return Promise.all(partIds.map((id) => {
                     if (id != firstPartId && id != lastPartId) {
                         return api.submitContribution(id, 8).catch((err) => {
@@ -259,37 +253,45 @@ describe(`[views]`, () => {
                     }
                 }));
             });
-            it(`POST should show result when last participant submitted contribution`, () => {
+            it(`POST /game should show result when last participant submitted contribution`, () => {
                 return utils.getRequest(config)
                     .post(`/parts/${lastPartId}/game`)
                     .send('contribution=6')
-                    .expect(200)
-                    .expect(/Participant 20/)
-                    .expect(/<form action="game\/result" method="POST"/);
+                    .expect(302)
+                    .expect('Location', `/parts/${lastPartId}`)
+                    .end(() => {
+                        return utils.getRequest(config)
+                            .get(`/parts/${lastPartId}`)
+                            .expect(200)
+                            .expect(/Participant 20/)
+                            .expect(/<form action="next-round" method="POST"/);
+                    });
             });
             it(`GET should show result after all participants submitted contribution`, () => {
                 return utils.getRequest(config)
-                    .get(`/parts/${firstPartId}/game`)
+                    .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/Participant 16/);
             });
-            it(`POST /result should redirect to game and show next round`, () => {
+            it(`POST /next-round should redirect to ./ and show next round`, () => {
                 return utils.getRequest(config)
-                    .post(`/parts/${firstPartId}/game/result`)
+                    .post(`/parts/${firstPartId}/next-round`)
                     .expect(302)
-                    .expect('Location', `/parts/${firstPartId}/game`)
+                    .expect('Location', `/parts/${firstPartId}`)
                     .then(() => {
                         return utils.getRequest(config)
-                            .get(`/parts/${firstPartId}/game`)
+                            .get(`/parts/${firstPartId}`)
                             .expect(200)
                             .expect(/How many of your .* points would you like to transfer to the group fund?/);
                     });
             });
 
-            it(`should able to finishe 2nd round`, () => {
+            it(`should able to finish 2nd round`, () => {
                 return Promise.all(partIds.map((id) => {
                     if (id != firstPartId) {
-                        return api.readyForNextRound(id);
+                        return api.readyForNextRound(id).then((success) => {
+                            success.should.be.true();
+                        });
                     }
                 })).then(() => {
                     return Promise.all(partIds.map((id) => {
@@ -303,9 +305,15 @@ describe(`[views]`, () => {
                     return utils.getRequest(config)
                         .post(`/parts/${lastPartId}/game`)
                         .send('contribution=8')
-                        .expect(200)
-                        .expect(/Participant 38/)
-                        .expect(/<form action="game\/result" method="POST"/);
+                        .expect(302)
+                        .expect('Location', `/parts/${lastPartId}`)
+                        .then(() => {
+                            return utils.getRequest(config)
+                                .get(`/parts/${lastPartId}`)
+                                .expect(200)
+                                .expect(/Participant 38/)
+                                .expect(/<form action="next-round" method="POST"/);
+                        });
                 });
 
             });

@@ -21,13 +21,28 @@ router.use((req, res, next) => {
 });
 
 /**
- * GET /:part/instruction
+ * GET /:part
  *
- * Instructions of the experiment.
+ * Redirects to corresponding pages.
  */
-router.get('/:part/instruction', (req, res, next) => {
-    // TODO(ztz): make instruction extensible.
-    res.render('parts/instruction_basic.pug');
+router.get('/:part', (req, res, next) => {
+    api.readPart(req.params.part).then((part) => {
+        if (part.stage == stage.INSTRUCTION)
+            res.render('parts/instruction_basic.pug');
+        else if (part.stage == stage.SELECT_CONTRIBUTION)
+            res.render('parts/game_play.pug');
+        else if (part.stage == stage.WAIT_FOR_COMPREHENSION)
+            res.render('parts/comprehension_wait.pug');
+        else if (part.stage == stage.VIEW_RESULT)
+            return api.readExp(part.experimentId).then((exp) => {
+                res.render('parts/game_result.pug',
+                    exp.results[exp.results.length - 1]);
+            });
+        else
+            next(new Error(`Invalid stage: ${part.stage}`));
+    }).catch((err) => {
+        next(err);
+    });
 });
 
 /**
@@ -37,24 +52,6 @@ router.get('/:part/instruction', (req, res, next) => {
  */
 router.get('/:part/comprehension', (req, res, next) => {
     res.render('parts/comprehension.pug', comprehension);
-});
-
-/**
- * GET /:part
- *
- * Redirects to corresponding pages.
- */
-router.get('/:part', (req, res, next) => {
-    api.readPart(req.params.part).then((part) => {
-        if (part.stage == stage.INSTRUCTION)
-            res.redirect(`${req.baseUrl}/${req.params.part}/instruction`);
-        else if (part.stage == stage.SELECT_CONTRIBUTION)
-            res.redirect(`${req.baseUrl}/${req.params.part}/game`);
-        else
-            next(new Error(`Invalid stage: ${part.stage}`));
-    }).catch((err) => {
-        next(err);
-    });
 });
 
 /**
@@ -75,60 +72,28 @@ router.post('/:part/comprehension', (req, res, next) => {
 });
 
 /**
- * GET /:part/game
+ * POST /:part/game
  *
- * Plays a round of game or shows result of a round.
+ * Receives contribution of a round.
  */
-router.get('/:part/game', (req, res, next) => {
-    api.readPart(req.params.part).then((part) => {
-        if (part.stage == stage.SELECT_CONTRIBUTION) {
-            res.render('parts/game_play.pug');
-        } else if (part.stage == stage.WAIT_FOR_COMPREHENSION) {
-            res.render('parts/comprehension_wait.pug');
-        } else if (part.stage == stage.VIEW_RESULT) {
-            return api.readExp(part.experimentId).then((exp) => {
-                res.render('parts/game_result.pug', exp.results[exp.results.length - 1]);
-            });
-        } else {
-            res.redirect(`${req.baseUrl}/${req.params.part}`);
-        }
+router.post('/:part/game', (req, res, next) => {
+    api.submitContribution(req.params.part, req.body.contribution).then(() => {
+        res.redirect(`${req.baseUrl}/${req.params.part}`);
     }, (err) => {
         next(err);
     });
 });
 
 /**
- * POST /:part/game
- *
- * Receives contribution of a round.
- */
-router.post('/:part/game', (req, res, next) => {
-    api.submitContribution(req.params.part, req.body.contribution).then(
-        (result) => {
-            res.render('parts/game_result.pug', result);
-        }, (err) => {
-            if (err == 'not in game stage')
-                res.redirect(`${req.baseUrl}/${req.params.part}`);
-            else if (err == 'not all finished')
-                res.render('parts/game_wait.pug');
-            else
-                next(err);
-        });
-});
-
-/**
- * POST /:part/game/resul
+ * POST /:part/next-round
  *
  * Receives signal that participant is ready for next round.
  */
-router.post('/:part/game/result', (req, res, next) => {
+router.post('/:part/next-round', (req, res, next) => {
     api.readyForNextRound(req.params.part).then(() => {
-        res.redirect(`${req.baseUrl}/${req.params.part}/game`);
+        res.redirect(`${req.baseUrl}/${req.params.part}`);
     }, (err) => {
-        if (err == 'not in game stage')
-            res.redirect(`${req.baseUrl}/${req.params.part}`);
-        else
-            next(err);
+        next(err);
     });
 });
 

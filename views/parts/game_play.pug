@@ -10,7 +10,7 @@ block content
 
   p How many of your 10 points would you like to transfer to the group fund?
   
-  form(method="POST")
+  form(action="game" method="POST")
     - for(var i = 0; i <= 10; i++)
       input(type="radio", name="contribution", value=i)
       | #{i}

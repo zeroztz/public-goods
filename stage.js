@@ -5,5 +5,5 @@ module.exports = Object.freeze({
     WAIT_FOR_COMPREHENSION: 'wait for comprehension',
     SELECT_CONTRIBUTION: 'select contribution',
     WAIT_FOR_SETTLEMENT: 'wait for settlement',
-    VIEW_RESULT: 'view result'
+    VIEW_RESULT: 'view result',
 });

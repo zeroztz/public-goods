@@ -147,7 +147,6 @@ function validateComprehensionTest(id, answers) {
 }
 
 function submitContribution(id, contribution) {
-    let result = {};
     return datastore.part.read(id).then((part) => {
         if (part.stage != stage.SELECT_CONTRIBUTION) {
             return Promise.reject({
@@ -170,8 +169,9 @@ function submitContribution(id, contribution) {
                 return allFinished &&
                     part.finishedRound + 1 == part.contributions.length;
             }, true)) {
-            return Promise.reject('not all finished');
+            return;
         }
+        var result = {};
         result.participantContributions = fullExp.parts.map(
             (part) => {
                 var contributions = part.contributions[part.finishedRound];
@@ -198,21 +198,23 @@ function submitContribution(id, contribution) {
         return datastore.exp.update(fullExp.exp).then(() => {
             return datastore.part.updateMultiple(fullExp.parts);
         });
-    }).then(() => {
-        return result;
     });
 }
 
+/**
+ * Notify participant is ready for next round.
+ *
+ * return true if succeed.
+ */
 function readyForNextRound(id) {
     return datastore.part.read(id).then((part) => {
         if (part.stage != stage.VIEW_RESULT) {
-            return Promise.reject({
-                code: 403,
-                message: "You cannot start a new round without viewing any result."
-            });
+            return false;
         }
         part.stage = stage.SELECT_CONTRIBUTION;
-        return datastore.part.update(part);
+        return datastore.part.update(part).then(() => {
+            return true;
+        });
     })
 }
 
