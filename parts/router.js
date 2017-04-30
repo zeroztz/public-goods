@@ -34,9 +34,8 @@ router.get('/:part', (req, res, next) => {
         else if (part.stage == stage.WAIT_FOR_COMPREHENSION)
             res.render('parts/comprehension_wait.pug');
         else if (part.stage == stage.VIEW_RESULT)
-            return api.readExp(part.experimentId).then((exp) => {
-                res.render('parts/game_result.pug',
-                    exp.results[exp.results.length - 1]);
+            return api.loadFullExp(part.experimentId).then((fullExp) => {
+                res.render('parts/game_result.pug', fullExp);
             });
         else
             next(new Error(`Invalid stage: ${part.stage}`));

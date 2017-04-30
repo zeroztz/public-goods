@@ -253,41 +253,45 @@ describe(`[views]`, () => {
                     }
                 }));
             });
-            it(`POST /game should show result when last participant submitted contribution`, () => {
-                return utils.getRequest(config)
+            it(`POST /game should show result when last participant submitted contribution`, (done) => {
+                utils.getRequest(config)
                     .post(`/parts/${lastPartId}/game`)
                     .send('contribution=6')
                     .expect(302)
                     .expect('Location', `/parts/${lastPartId}`)
-                    .end(() => {
-                        return utils.getRequest(config)
+                    .end((err, res) => {
+                        if (err) throw err;
+                        utils.getRequest(config)
                             .get(`/parts/${lastPartId}`)
                             .expect(200)
-                            .expect(/Participant 20/)
-                            .expect(/<form action="next-round" method="POST"/);
+                            .expect(/Participant #2 20/)
+                            .expect(/<form action="next-round" method="POST"/)
+                            .end(done);
                     });
             });
             it(`GET should show result after all participants submitted contribution`, () => {
                 return utils.getRequest(config)
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
-                    .expect(/Participant 16/);
+                    .expect(/Participant #1 16/);
             });
-            it(`POST /next-round should redirect to ./ and show next round`, () => {
-                return utils.getRequest(config)
+            it(`POST /next-round should redirect to ./ and show next round`, (done) => {
+                utils.getRequest(config)
                     .post(`/parts/${firstPartId}/next-round`)
                     .expect(302)
                     .expect('Location', `/parts/${firstPartId}`)
-                    .then(() => {
+                    .end((err) => {
+                        if (err) throw err;
                         return utils.getRequest(config)
                             .get(`/parts/${firstPartId}`)
                             .expect(200)
-                            .expect(/How many of your .* points would you like to transfer to the group fund?/);
+                            .expect(/How many of your .* points would you like to transfer to the group fund?/)
+                            .end(done)
                     });
             });
 
-            it(`should able to finish 2nd round`, () => {
-                return Promise.all(partIds.map((id) => {
+            it(`should able to finish 2nd round`, (done) => {
+                Promise.all(partIds.map((id) => {
                     if (id != firstPartId) {
                         return api.readyForNextRound(id).then((success) => {
                             success.should.be.true();
@@ -302,17 +306,19 @@ describe(`[views]`, () => {
                         }
                     }));
                 }).then(() => {
-                    return utils.getRequest(config)
+                    utils.getRequest(config)
                         .post(`/parts/${lastPartId}/game`)
                         .send('contribution=8')
                         .expect(302)
                         .expect('Location', `/parts/${lastPartId}`)
-                        .then(() => {
-                            return utils.getRequest(config)
+                        .end((err) => {
+                            if (err) throw err;
+                            utils.getRequest(config)
                                 .get(`/parts/${lastPartId}`)
                                 .expect(200)
-                                .expect(/Participant 38/)
-                                .expect(/<form action="next-round" method="POST"/);
+                                .expect(/Participant #2 38/)
+                                .expect(/<form action="next-round" method="POST"/)
+                                .end(done);
                         });
                 });
 

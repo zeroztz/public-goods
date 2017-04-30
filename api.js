@@ -11,6 +11,7 @@ function newExp(settings) {
     return {
         creationDate: new Date(),
         settings,
+        finishedRound: 0,
         results: []
     };
 }
@@ -22,6 +23,7 @@ function newPart(id, expId) {
         stage: 'instruction',
         finishedRound: 0,
         contributions: [],
+        endOfTurnBalances: [],
         balance: 0
     };
 }
@@ -175,16 +177,17 @@ function submitContribution(id, contribution) {
             return loadFullExp(part.experimentId);
         });
     }).then((fullExp) => {
+        var i = fullExp.exp.finishedRound;
         if (!fullExp.parts.reduce((allFinished, part) => {
                 return allFinished &&
-                    part.finishedRound + 1 == part.contributions.length;
+                    i + 1 == part.contributions.length;
             }, true)) {
             return;
         }
         var result = {};
         result.participantContributions = fullExp.parts.map(
             (part) => {
-                var contributions = part.contributions[part.finishedRound];
+                var contributions = part.contributions[i];
                 part.balance += 10 - contributions;
                 return contributions;
             });
@@ -196,10 +199,12 @@ function submitContribution(id, contribution) {
             result.groupFund * 2;
         result.participantBalances = fullExp.parts.map((part) => {
             part.balance += result.groupEarning / fullExp.parts.length;
+            part.endOfTurnBalances.push(part.balance);
             ++part.finishedRound;
             part.stage = stage.VIEW_RESULT;
             return part.balance;
         });
+        ++fullExp.exp.finishedRound;
         fullExp.exp.results.push(result);
         return datastore.exp.update(fullExp.exp).then(() => {
             return datastore.part.updateMultiple(fullExp.parts);
@@ -230,6 +235,7 @@ module.exports = {
     createExp,
     readExp,
     readPart,
+    loadFullExp,
     validateComprehensionTest,
     submitContribution,
     readyForNextRound

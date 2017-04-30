@@ -3,6 +3,9 @@ extends ../base.pug
 block content
   h3 Result
 
+  -
+    var i = exp.finishedRound - 1;
+
   p
     i
       This screen will automatically move forward in 20 seconds.
@@ -12,18 +15,19 @@ block content
   p Contributed to the group fund:
 
   p
-    each val in participantContributions
-      li Participant #{val}
+    each part in parts
+      li #{part.name} #{part.contributions[i]}
 
-  p Group fund total = #{groupFund}
 
-  p Group fund X 2 = #{groupEarning}
+  p Group fund total = #{exp.results[i].groupFund}
+
+  p Group fund X 2 = #{exp.results[i].groupEarning}
 
   p Amount each participant ends up with:
 
   p
-    each val in participantBalances
-      li Participant #{val}
+    each part in parts 
+      li #{part.name} #{part.endOfTurnBalances[i]}
 
   p Note: These points are yours to keep and will be unaffected by how you play in future rounds.
 
