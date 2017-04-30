@@ -22,7 +22,7 @@ describe(`[views]`, () => {
     before(() => {
         return api.createExp({
             passcode: 'pg',
-            partSize: '3'
+            partSize: '4'
         }).then((id) => {
             id.should.not.be.NaN();
             id.should.not.be.Infinity();
@@ -30,7 +30,7 @@ describe(`[views]`, () => {
             return api.readExp(expId).then((result) => {
                 result.should.not.be.null();
                 result.should.have.property('participants')
-                    .which.is.a.Array().and.have.length(3);
+                    .which.is.a.Array().and.have.length(4);
                 partIds = result.participants.map((part) => {
                     part.should.be.a.Number();
                     return part;

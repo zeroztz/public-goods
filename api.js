@@ -7,6 +7,25 @@ const stage = require('./stage');
 
 const kMaxPartSize = 10;
 
+function newExp(settings) {
+    return {
+        creationDate: new Date(),
+        settings,
+        results: []
+    };
+}
+
+function newPart(id, expId) {
+    return {
+        name: 'Participant #' + id,
+        experimentId: expId,
+        stage: 'instruction',
+        finishedRound: 0,
+        contributions: [],
+        balance: 0
+    };
+}
+
 function getExps(token) {
     // Lists all experiments in the Datastore sorted desending by creation time.
     // The ``limit`` argument determines the maximum amount of results to
@@ -38,31 +57,25 @@ function createExp(expConfig) {
                 message: 'unauthorized'
             });
 
-        var setting = {
+        var settings = {
             partSize: parseInt(expConfig.partSize, 10)
         }
-        if (!setting.partSize === NaN ||
-            !(setting.partSize > 1 && setting.partSize <= kMaxPartSize)) {
+        if (!settings.partSize === NaN ||
+            !(settings.partSize > 1 && settings.partSize <= kMaxPartSize)) {
             reject({
                 code: 400,
                 message: 'Number of participants is invalid.'
             });
         }
-        resolve(setting);
-    }).then((setting) => {
+        resolve(settings);
+    }).then((settings) => {
         // Creates a new experiment and corresponding participants with current date.
         // Return new experiment id if no error occurs.
-        var expData = {
-            creationDate: new Date(),
-            setting
-        };
+        var expData = newExp(settings);
         return datastore.exp.create(expData).then((exp) => {
             var partDataList = [];
-            for (var i = 0; i < exp.setting.partSize; ++i) {
-                partDataList.push({
-                    experimentId: exp.id,
-                    stage: 'instruction'
-                });
+            for (var i = 1; i <= exp.settings.partSize; ++i) {
+                partDataList.push(newPart(i, exp.id));
             };
             return datastore.part.createMultiple(partDataList)
                 .then((parts) => {
@@ -118,9 +131,6 @@ function validateComprehensionTest(id, answers) {
         });
         if (missCount == 0) {
             part.stage = stage.WAIT_FOR_COMPREHENSION;
-            part.finishedRound = 0;
-            part.contributions = [];
-            part.balance = 0;
 
             return datastore.part.update(part).then(() => {
                 return loadFullExp(part.experimentId);
@@ -190,11 +200,7 @@ function submitContribution(id, contribution) {
             part.stage = stage.VIEW_RESULT;
             return part.balance;
         });
-        if (fullExp.exp.results === undefined) {
-            fullExp.exp.results = [result];
-        } else {
-            fullExp.exp.results.push(result);
-        }
+        fullExp.exp.results.push(result);
         return datastore.exp.update(fullExp.exp).then(() => {
             return datastore.part.updateMultiple(fullExp.parts);
         });
