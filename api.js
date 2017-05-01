@@ -178,20 +178,22 @@ function submitContribution(id, contribution) {
             return loadFullExp(part.experimentId);
         });
     }).then((fullExp) => {
-        var i = fullExp.exp.finishedRound;
-        if (!fullExp.parts.reduce((allFinished, part) => {
+        var exp = fullExp.exp;
+        var parts = fullExp.parts;
+        var i = exp.finishedRound;
+        if (!parts.reduce((allFinished, part) => {
                 return allFinished &&
                     i + 1 == part.contributions.length;
             }, true)) {
             return;
         }
-        fullExp.exp.funds.push(
-            fullExp.parts.reduce((sum, part) => {
+        exp.funds.push(
+            parts.reduce((sum, part) => {
                 part.balance += 10 - part.contributions[i];
                 return sum + part.contributions[i];
             }, 0));
-        fullExp.exp.earnings.push(
-            fullExp.exp.funds[i] * 2);
+        exp.earnings.push(
+            exp.funds[i] * 2);
         fullExp.parts.forEach((part) => {
             part.balance += fullExp.exp.earnings[i] / fullExp.parts.length;
             part.endOfTurnBalances.push(part.balance);
