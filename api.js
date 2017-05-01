@@ -12,7 +12,8 @@ function newExp(settings) {
         creationDate: new Date(),
         settings,
         finishedRound: 0,
-        results: []
+        funds: [],
+        earnings: []
     };
 }
 
@@ -184,28 +185,20 @@ function submitContribution(id, contribution) {
             }, true)) {
             return;
         }
-        var result = {};
-        result.participantContributions = fullExp.parts.map(
-            (part) => {
-                var contributions = part.contributions[i];
-                part.balance += 10 - contributions;
-                return contributions;
-            });
-
-        result.groupFund =
-            result.participantContributions.reduce((sum, contribution) =>
-                sum + contribution);
-        result.groupEarning =
-            result.groupFund * 2;
-        result.participantBalances = fullExp.parts.map((part) => {
-            part.balance += result.groupEarning / fullExp.parts.length;
+        fullExp.exp.funds.push(
+            fullExp.parts.reduce((sum, part) => {
+                part.balance += 10 - part.contributions[i];
+                return sum + part.contributions[i];
+            }, 0));
+        fullExp.exp.earnings.push(
+            fullExp.exp.funds[i] * 2);
+        fullExp.parts.forEach((part) => {
+            part.balance += fullExp.exp.earnings[i] / fullExp.parts.length;
             part.endOfTurnBalances.push(part.balance);
             ++part.finishedRound;
             part.stage = stage.VIEW_RESULT;
-            return part.balance;
         });
         ++fullExp.exp.finishedRound;
-        fullExp.exp.results.push(result);
         return datastore.exp.update(fullExp.exp).then(() => {
             return datastore.part.updateMultiple(fullExp.parts);
         });
