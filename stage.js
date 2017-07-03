@@ -2,8 +2,8 @@
 
 module.exports = Object.freeze({
     INSTRUCTION: 'instruction',
-    WAIT_FOR_COMPREHENSION: 'wait for comprehension',
+    WAIT: 'wait',
+    EXCLUSION_VOTE: 'exclusion_vote',
     SELECT_CONTRIBUTION: 'select contribution',
-    WAIT_FOR_SETTLEMENT: 'wait for settlement',
     VIEW_RESULT: 'view result',
 });

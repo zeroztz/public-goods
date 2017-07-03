@@ -1,0 +1,13 @@
+extends ../base.pug
+
+block content
+  h3 Play
+
+  p You received at least 2 exclusion votes and will not play in this round.
+
+  p Others will play the game and the group fund multiplier will now be 1.5 (whatever amount is contributed to the group fund will be multiplied by 1.5 before being equally distributed among the remaining 3 participants).
+
+  form(action="game" method="POST")
+    p Please click 
+      input(type="submit" value="Here")
+      | &nbsp;to view game result.

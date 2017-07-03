@@ -13,7 +13,9 @@ function newExp(settings) {
         settings,
         finishedRound: 0,
         funds: [],
-        earnings: []
+        earnings: [],
+        kickedParts: ['None'],
+        multipliers: []
     };
 }
 
@@ -22,9 +24,11 @@ function newPart(id, expId) {
         name: 'Participant #' + id,
         experimentId: expId,
         stage: 'instruction',
+        excluded: false,
         finishedRound: 0,
         contributions: [],
         endOfTurnBalances: [],
+        exclusionVotes: ['None'],
         balance: 0
     };
 }
@@ -61,7 +65,8 @@ function createExp(expConfig) {
             });
 
         var settings = {
-            partSize: parseInt(expConfig.partSize, 10)
+            partSize: parseInt(expConfig.partSize, 10),
+            kickEnabled: (expConfig.kickEnabled == "true")
         }
         if (!settings.partSize === NaN ||
             !(settings.partSize > 1 && settings.partSize <= kMaxPartSize)) {
@@ -115,6 +120,14 @@ function loadFullExp(expId) {
     });
 }
 
+function allWait(fullExp) {
+    return fullExp.parts.reduce(
+        (allFinished, part) => {
+            return allFinished &&
+                part.stage == stage.WAIT;
+        }, true);
+}
+
 /**
  * Validates answer of comprehension test.
  */
@@ -133,18 +146,12 @@ function validateComprehensionTest(id, answers) {
             }
         });
         if (missCount == 0) {
-            part.stage = stage.WAIT_FOR_COMPREHENSION;
+            part.stage = stage.WAIT;
 
             return datastore.part.update(part).then(() => {
                 return loadFullExp(part.experimentId);
             }).then((fullExp) => {
-                if (
-                    fullExp.parts.reduce(
-                        (allReady, part) => (
-                            allReady && part.stage == stage.WAIT_FOR_COMPREHENSION
-                        ), true
-                    )
-                ) {
+                if (allWait(fullExp)) {
                     fullExp.parts.forEach((part) => {
                         part.stage = stage.SELECT_CONTRIBUTION;
                     });
@@ -173,34 +180,48 @@ function submitContribution(id, contribution) {
                 message: "You have already made contribution this round"
             });
         }
-        part.contributions.push(parseInt(contribution, 10));
+        if (part.excluded) {
+            part.contributions.push(0);
+        } else {
+            part.contributions.push(parseInt(contribution, 10));
+        }
+        part.stage = stage.WAIT;
         return datastore.part.update(part).then(() => {
             return loadFullExp(part.experimentId);
         });
     }).then((fullExp) => {
+        if (!allWait(fullExp)) {
+            return;
+        }
         var exp = fullExp.exp;
         var parts = fullExp.parts;
         var i = exp.finishedRound;
-        if (!parts.reduce((allFinished, part) => {
-                return allFinished &&
-                    i + 1 == part.contributions.length;
-            }, true)) {
-            return;
+        var numParts = parts.length;
+        if (exp.settings.kickEnabled && exp.kickedParts[i] != 'None') {
+            numParts--;
+            exp.multipliers.push(1.5);
+        } else {
+            exp.multipliers.push(2);
         }
+
         exp.funds.push(
             parts.reduce((sum, part) => {
-                part.balance += 10 - part.contributions[i];
+                if (!part.excluded) {
+                    part.balance += 10 - part.contributions[i];
+                }
                 return sum + part.contributions[i];
             }, 0));
         exp.earnings.push(
-            exp.funds[i] * 2);
-        fullExp.parts.forEach((part) => {
-            part.balance += fullExp.exp.earnings[i] / fullExp.parts.length;
+            exp.funds[i] * exp.multipliers[i]);
+        parts.forEach((part) => {
+            if (!part.excluded) {
+                part.balance += exp.earnings[i] / numParts;
+            }
             part.endOfTurnBalances.push(part.balance);
             ++part.finishedRound;
             part.stage = stage.VIEW_RESULT;
         });
-        ++fullExp.exp.finishedRound;
+        ++exp.finishedRound;
         return datastore.exp.update(fullExp.exp).then(() => {
             return datastore.part.updateMultiple(fullExp.parts);
         });
@@ -217,11 +238,70 @@ function readyForNextRound(id) {
         if (part.stage != stage.VIEW_RESULT) {
             return false;
         }
-        part.stage = stage.SELECT_CONTRIBUTION;
-        return datastore.part.update(part).then(() => {
+        return datastore.exp.read(part.experimentId).then((exp) => {
+            part.excluded = false;
+            if (exp.settings.kickEnabled)
+                part.stage = stage.EXCLUSION_VOTE;
+            else
+                part.stage = stage.SELECT_CONTRIBUTION;
+            return datastore.part.update(part);
+        }).then(() => {
             return true;
         });
-    })
+    });
+}
+
+/**
+ * Submit exclusion vote.
+ *
+ * return true if vote is valid.
+ */
+function submitExclusionVote(id, vote) {
+    return datastore.part.read(id).then((part) => {
+        if (part.stage != stage.EXCLUSION_VOTE) {
+            return Promise.reject({
+                code: 403,
+                message: 'not ready for exclusion vote'
+            });
+        }
+        part.exclusionVotes.push(vote);
+        part.stage = stage.WAIT;
+        return datastore.part.update(part).then(() => {
+            return loadFullExp(part.experimentId);
+        });
+    }).then((fullExp) => {
+        if (!allWait(fullExp)) {
+            return;
+        }
+        var exp = fullExp.exp;
+        var parts = fullExp.parts;
+        var i = exp.finishedRound;
+
+        var kickedParts = [];
+
+        parts.map((part) => {
+            if (parts.reduce((totalVotes, otherPart) => {
+                    if (otherPart.exclusionVotes[i] == part.name) {
+                        return totalVotes + 1;
+                    }
+                    return totalVotes;
+                }, 0) * 2 >= exp.settings.partSize) {
+                kickedParts.push(part);
+            }
+            part.stage = stage.SELECT_CONTRIBUTION;
+        });
+        if (kickedParts.length > 0) {
+            var kickedPart = kickedParts[
+                Math.floor(Math.random() * kickedParts.length)];
+            kickedPart.excluded = true;
+            exp.kickedParts.push(kickedPart.name);
+        } else {
+            exp.kickedParts.push('None');
+        }
+        return datastore.exp.update(fullExp.exp).then(() => {
+            return datastore.part.updateMultiple(fullExp.parts);
+        });
+    });
 }
 
 // [START exports]
@@ -233,6 +313,7 @@ module.exports = {
     loadFullExp,
     validateComprehensionTest,
     submitContribution,
-    readyForNextRound
+    readyForNextRound,
+    submitExclusionVote,
 };
 // [END exports]

@@ -29,11 +29,26 @@ router.get('/:part', (req, res, next) => {
     api.readPart(req.params.part).then((part) => {
         if (part.stage == stage.INSTRUCTION)
             res.render('parts/instruction_basic.pug');
-        else if (part.stage == stage.SELECT_CONTRIBUTION)
-            res.render('parts/game_play.pug');
-        else if (part.stage == stage.WAIT_FOR_COMPREHENSION)
-            res.render('parts/comprehension_wait.pug');
-        else if (part.stage == stage.VIEW_RESULT)
+        else if (part.stage == stage.WAIT)
+            res.render('parts/wait.pug');
+        else if (part.stage == stage.EXCLUSION_VOTE)
+            return api.loadFullExp(part.experimentId).then((fullExp) => {
+                res.render('parts/exclusion_vote.pug', fullExp);
+            });
+        else if (part.stage == stage.SELECT_CONTRIBUTION) {
+            return api.loadFullExp(part.experimentId).then((fullExp) => {
+                if (fullExp.exp.settings.kickEnabled) {
+                    if (part.excluded) {
+                        res.render('parts/game_play_excluded.pug');
+                    } else {
+                        res.render('parts/game_play_not_excluded.pug',
+                            fullExp);
+                    }
+                } else {
+                    res.render('parts/game_play.pug');
+                }
+            });
+        } else if (part.stage == stage.VIEW_RESULT)
             return api.loadFullExp(part.experimentId).then((fullExp) => {
                 res.render('parts/game_result.pug', fullExp);
             });
@@ -90,6 +105,19 @@ router.post('/:part/game', (req, res, next) => {
  */
 router.post('/:part/next-round', (req, res, next) => {
     api.readyForNextRound(req.params.part).then(() => {
+        res.redirect(`${req.baseUrl}/${req.params.part}`);
+    }, (err) => {
+        next(err);
+    });
+});
+
+/**
+ * POST /:part/exclusion-vote
+ *
+ * Receives signal that participant is ready for next round.
+ */
+router.post('/:part/exclusion-vote', (req, res, next) => {
+    api.submitExclusionVote(req.params.part, req.body.vote).then(() => {
         res.redirect(`${req.baseUrl}/${req.params.part}`);
     }, (err) => {
         next(err);

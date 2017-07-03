@@ -16,7 +16,8 @@ block content
 
   p
     each part in parts
-      li #{part.name} #{part.contributions[i]}
+      unless part.excluded
+        li #{part.name} #{part.contributions[i]}
 
 
   p Group funds = #{exp.funds[i]}
@@ -27,7 +28,10 @@ block content
 
   p
     each part in parts 
-      li #{part.name} #{part.endOfTurnBalances[i]}
+      if part.excluded
+        li #{part.name} was excluded (received no points).
+      else 
+        li #{part.name} #{part.endOfTurnBalances[i]}
 
   p Note: These points are yours to keep and will be unaffected by how you play in future rounds.
 

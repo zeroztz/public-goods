@@ -1,0 +1,10 @@
+extends game_play.pug
+
+block exclusion
+  - var excluded = exp.kickedParts[exp.finishedRound]
+  if excluded == 'None'
+    p No participants received 2 or more exclusion votes. All 4 participants will play this round.
+  else
+    p #{excluded} received at least 2 exclusion votes and will not play in this round with you.
+
+    p You will play the game with the 2 remaining participants in your group and the group fund multiplier will now be 1.5 (whatever amount is contributed to the group fund will be multiplied by 1.5 before being equally distributed among the remaining 3 participants).

@@ -1,0 +1,29 @@
+extends ../base.pug
+
+block content
+  h3 Exclusion Vote
+
+  p 
+    i You have&nbsp;
+      u 30
+      | &nbsp;seconds to make your decision.
+
+  p For this round, you have the option to vote to exclude one of them from the game.
+
+  p Participant will&nbsp;
+   b NOT
+   | &nbsp;know who voted for whom.
+
+  p If a participant receives 2 votes, he or she will receive no points and be excluded from playing in this round.
+
+  p Voting will be anonymous. If a participant is excluded, then all participants will be informed that he or she will be excluded from playing in the round.
+
+  p Who would you like to cast your “exclusion vote” for?
+
+  form(action="exclusion-vote" method="POST")
+    fieldset
+      each part in parts
+        input(type="radio" name=vote value=part.name)
+      input(type="radio" name=vote value="None" checked)
+
+    input(type="submit" value="Submit")
