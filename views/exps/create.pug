@@ -7,13 +7,18 @@ block content
       legend Passcode
       input(type="text" name="passcode" value=experiment.passcode)
 
+    br
+
     fieldset
       legend Number of participants
       input(type="number" name="partSize" value=experiment.partSize)
 
+    br
+
     fieldset
       legend Kick
-      input(type="radio" name="kickEnabled" value="true" checked)
-      input(type="radio" name="kickEnabled" value="false")
+      input(type="radio" name="kickEnabled" value="true" checked) Enable
+      br
+      input(type="radio" name="kickEnabled" value="false") Disable
 
     input(type="submit" value="Create")
