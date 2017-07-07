@@ -269,7 +269,7 @@ describe(`[views]`, () => {
             it(`POST /game should let other participants to submit contribution`, () => {
                 return Promise.all(partIds.map((id) => {
                     if (id != firstPartId && id != lastPartId) {
-                        return api.submitContribution(id, 8).catch((err) => {
+                        return api.submitContribution(id, '8').catch((err) => {
                             err.should.equal('not all finished');
                         });
                     }
@@ -322,7 +322,7 @@ describe(`[views]`, () => {
                 })).then(() => {
                     return Promise.all(partIds.map((id) => {
                         if (id != lastPartId) {
-                            return api.submitContribution(id, 8).catch((err) => {
+                            return api.submitContribution(id, '8').catch((err) => {
                                 err.should.equal('not all finished');
                             });
                         }
@@ -358,7 +358,8 @@ describe(`[views]`, () => {
             return api.createExp({
                 passcode: 'pg',
                 partSize: '4',
-                kickEnabled: 'true'
+                kickEnabled: 'true',
+                fakeReputationEnabled: 'false'
             }).then((id) => {
                 id.should.not.be.NaN();
                 id.should.not.be.Infinity();
@@ -437,7 +438,7 @@ describe(`[views]`, () => {
             });
             it(`should finish first round like normal mode.`, () => {
                 return Promise.all(partIds.map((id) => {
-                    return api.submitContribution(id, 10).catch((err) => {
+                    return api.submitContribution(id, '10').catch((err) => {
                         err.should.equal('not all finished');
                     });
                 }));
@@ -500,7 +501,7 @@ describe(`[views]`, () => {
             it(`should be able to finish 2nd round without anyone exlucded`, (done) => {
                 Promise.all(partIds.map((id) => {
                     if (id != lastPartId) {
-                        return api.submitContribution(id, 10).catch((err) => {
+                        return api.submitContribution(id, '10').catch((err) => {
                             err.should.equal('not all finished');
                         });
                     }
@@ -555,7 +556,7 @@ describe(`[views]`, () => {
             it(`should be able to finish 3rd round without the last participant`, (done) => {
                 Promise.all(partIds.map((id) => {
                     if (id != lastPartId) {
-                        api.submitContribution(id, 10).catch((err) => {
+                        api.submitContribution(id, '10').catch((err) => {
                             err.should.equal('not all finished');
                         });
                     }
@@ -592,6 +593,136 @@ describe(`[views]`, () => {
                         .expect(/<form action="game" method="POST"/)
                         .end(done);
                 });
+            });
+        });
+    });
+    describe(`[fake reputation] /parts/:part`, () => {
+        let expId;
+        let partIds;
+        let firstPartId;
+        let lastPartId;
+
+        before(() => {
+            return api.createExp({
+                passcode: 'pg',
+                partSize: '4',
+                kickEnabled: 'false',
+                fakeReputationEnabled: 'true'
+            }).then((id) => {
+                id.should.not.be.NaN();
+                id.should.not.be.Infinity();
+                expId = id;
+                return api.readExp(expId).then((result) => {
+                    result.should.not.be.null();
+                    result.should.have.property('participants')
+                        .which.is.a.Array().and.have.length(4);
+                    partIds = result.participants.map((part) => {
+                        part.should.be.a.Number();
+                        return part;
+                    });
+                    firstPartId = partIds[0];
+                    lastPartId = partIds[1];
+                });
+            });
+        });
+        describe(`[instruction]`, () => {
+            // TODO: add fake reputaion specific instruction.
+            it(`should show instructions`, () => {
+                return utils.getRequest(config)
+                    .get(`/parts/${firstPartId}`)
+                    .expect(200)
+                    .expect(/.*<a href="comprehension">.*/)
+            });
+        });
+
+        describe(`/comprehension`, () => {
+            // TODO: add fake reputaion specific test.
+            it(`GET should show comprehension test`, () => {
+                return utils.getRequest(config)
+                    .get(`/parts/${firstPartId}/comprehension`)
+                    .expect(200)
+                    .expect(/<h3>Comprehension Test<\/h3>/)
+                    .expect(/method="POST"/)
+            });
+
+            it(`POST should pass when answers are correct`, () => {
+                return utils.getRequest(config)
+                    .post(`/parts/${firstPartId}/comprehension`)
+                    .type('form')
+                    .send({
+                        q1: 'c',
+                        q2: 'b'
+                    })
+                    .expect(200)
+                    .expect(/You got all the comprehension questions correct/)
+                    .expect(/<a href=".\//)
+            });
+
+
+            it(`POST should let other particiants to finish comprehension test`, () => {
+                return Promise.all(partIds.map((id) => {
+                    if (id != firstPartId) {
+                        return api.validateComprehensionTest(
+                            id, {
+                                q1: 'c',
+                                q2: 'b'
+                            }
+                        ).then((result) => {
+                            result.should.have.property('missCount').which.equal(0);
+                        });
+                    }
+                }));
+            });
+        });
+
+        describe(`[game]`, () => {
+            it(`GET should show game play`, () => {
+                return utils.getRequest(config)
+                    .get(`/parts/${firstPartId}`)
+                    .expect(200)
+                    .expect(/How many of your .* points would you like to transfer to the group fund?/)
+                    .expect(/You can claim to contribute more than you really do/)
+                    .expect(/<form action="game" method="POST"/);
+            });
+            it(`the first participant should be able to fake reputation`, () => {
+                return utils.getRequest(config)
+                    .post(`/parts/${firstPartId}/game`)
+                    .type('form')
+                    .send({
+                        contribution: '0',
+                        claimedContribution: '10'
+                    })
+                    .expect(302)
+                    .expect('Location', `/parts/${firstPartId}`);
+            });
+            it(`the other participants should be able to play as normal`, () => {
+                return Promise.all(partIds.map((id) => {
+                    if (id != firstPartId) {
+                        return api.submitContribution(id, '10', '10').catch((err) => {
+                            err.should.equal('not all finished');
+                        });
+                    }
+                }));
+            });
+            it(`the first participant should see claimed result and actual result of theirselves`, () => {
+                return utils.getRequest(config)
+                    .get(`/parts/${firstPartId}`)
+                    .expect(200)
+                    .expect(/Claimed contribution.*Participant #1 10.*actually contribute 0/)
+                    .expect(/Claimed group funds = 40/)
+                    .expect(/Actual group funds = 30/)
+                    .expect(/Group earnings = 60/)
+                    .expect(/claimed to earn.*Participant #1 15.*actually earn 23/);
+            });
+            it(`the last paricipant should not see the actuall result of the first participant`, () => {
+                return utils.getRequest(config)
+                    .get(`/parts/${lastPartId}`)
+                    .expect(200)
+                    .expect(/Claimed contribution.*Participant #1 10.*actually contribute 10/)
+                    .expect(/Claimed group funds = 40/)
+                    .expect(/Actual group funds = 30/)
+                    .expect(/Group earnings = 60/)
+                    .expect(/claimed to earn.*Participant #1 15.*actually earn 15/);
             });
         });
     });

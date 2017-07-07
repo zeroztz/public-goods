@@ -21,11 +21,11 @@ router.use((req, res, next) => {
 });
 
 /**
- * GET /:part
+ * GET /:part/
  *
  * Redirects to corresponding pages.
  */
-router.get('/:part', (req, res, next) => {
+router.get('/:part/', (req, res, next) => {
     api.readPart(req.params.part).then((part) => {
         if (part.stage == stage.INSTRUCTION)
             res.render('parts/instruction_basic.pug');
@@ -45,11 +45,12 @@ router.get('/:part', (req, res, next) => {
                             fullExp);
                     }
                 } else {
-                    res.render('parts/game_play.pug');
+                    res.render('parts/game_play.pug', fullExp);
                 }
             });
         } else if (part.stage == stage.VIEW_RESULT)
             return api.loadFullExp(part.experimentId).then((fullExp) => {
+                fullExp.myself = part;
                 res.render('parts/game_result.pug', fullExp);
             });
         else
@@ -91,8 +92,8 @@ router.post('/:part/comprehension', (req, res, next) => {
  * Receives contribution of a round.
  */
 router.post('/:part/game', (req, res, next) => {
-    api.submitContribution(req.params.part, req.body.contribution).then(() => {
-        res.redirect(`${req.baseUrl}/${req.params.part}`);
+    api.submitContribution(req.params.part, req.body.contribution, req.body.claimedContribution).then(() => {
+        res.redirect(`${req.baseUrl}/${req.params.part}/`);
     }, (err) => {
         next(err);
     });
@@ -105,7 +106,7 @@ router.post('/:part/game', (req, res, next) => {
  */
 router.post('/:part/next-round', (req, res, next) => {
     api.readyForNextRound(req.params.part).then(() => {
-        res.redirect(`${req.baseUrl}/${req.params.part}`);
+        res.redirect(`${req.baseUrl}/${req.params.part}/`);
     }, (err) => {
         next(err);
     });
@@ -118,7 +119,7 @@ router.post('/:part/next-round', (req, res, next) => {
  */
 router.post('/:part/exclusion-vote', (req, res, next) => {
     api.submitExclusionVote(req.params.part, req.body.vote).then(() => {
-        res.redirect(`${req.baseUrl}/${req.params.part}`);
+        res.redirect(`${req.baseUrl}/${req.params.part}/`);
     }, (err) => {
         next(err);
     });

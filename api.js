@@ -13,6 +13,7 @@ function newExp(settings) {
         settings,
         finishedRound: 0,
         funds: [],
+        claimedFunds: [],
         earnings: [],
         kickedParts: ['None'],
         multipliers: []
@@ -27,9 +28,12 @@ function newPart(id, expId) {
         excluded: false,
         finishedRound: 0,
         contributions: [],
-        endOfTurnBalances: [],
+        claimedContributions: [],
+        incomes: [],
+        claimedIncomes: [],
         exclusionVotes: ['None'],
-        balance: 0
+        balance: 0,
+        claimedBalance: 0
     };
 }
 
@@ -66,7 +70,8 @@ function createExp(expConfig) {
 
         var settings = {
             partSize: parseInt(expConfig.partSize, 10),
-            kickEnabled: (expConfig.kickEnabled == "true")
+            kickEnabled: (expConfig.kickEnabled == "true"),
+            fakeReputationEnabled: (expConfig.fakeReputationEnabled == "true")
         }
         if (!settings.partSize === NaN ||
             !(settings.partSize > 1 && settings.partSize <= kMaxPartSize)) {
@@ -166,7 +171,7 @@ function validateComprehensionTest(id, answers) {
     });
 }
 
-function submitContribution(id, contribution) {
+function submitContribution(id, contribution, claimedContribution) {
     return datastore.part.read(id).then((part) => {
         if (part.stage != stage.SELECT_CONTRIBUTION) {
             return Promise.reject({
@@ -182,8 +187,14 @@ function submitContribution(id, contribution) {
         }
         if (part.excluded) {
             part.contributions.push(0);
+            part.claimedContributions.push(0);
         } else {
-            part.contributions.push(parseInt(contribution, 10));
+            var parsedContribution = parseInt(contribution, 10);
+            var parsedClaimedContribution = parseInt(claimedContribution, 10);
+            if (parsedClaimedContribution < parsedContribution)
+                parseClaimedContribution = parsedContribution;
+            part.contributions.push(parsedContribution);
+            part.claimedContributions.push(parsedClaimedContribution);
         }
         part.stage = stage.WAIT;
         return datastore.part.update(part).then(() => {
@@ -207,19 +218,34 @@ function submitContribution(id, contribution) {
         exp.funds.push(
             parts.reduce((sum, part) => {
                 if (!part.excluded) {
-                    part.balance += 10 - part.contributions[i];
+                    part.incomes.push(10 - part.contributions[i]);
+                } else {
+                    part.incomes.push(0);
                 }
                 return sum + part.contributions[i];
+            }, 0));
+        exp.claimedFunds.push(
+            parts.reduce((sum, part) => {
+                if (part.claimedContributions[i] > part.contributions[i])
+                    part.incomes[i] -= (part.claimedContributions[i] - part.contributions[i]) * 0.2;
+                if (!part.excluded) {
+                    part.claimedIncomes.push(10 - part.claimedContributions[i]);
+                } else {
+                    part.claimedIncomes.push(0);
+                }
+                return sum + part.claimedContributions[i];
             }, 0));
         exp.earnings.push(
             exp.funds[i] * exp.multipliers[i]);
         parts.forEach((part) => {
             if (!part.excluded) {
-                part.balance += exp.earnings[i] / numParts;
+                part.incomes[i] += exp.earnings[i] / numParts;
+                part.claimedIncomes[i] += exp.earnings[i] / numParts;
             }
-            part.endOfTurnBalances.push(part.balance);
-            ++part.finishedRound;
+            part.balance += part.incomes[i];
+            part.claimedBalance += part.claimedIncomes[i];
             part.stage = stage.VIEW_RESULT;
+            ++part.finishedRound;
         });
         ++exp.finishedRound;
         return datastore.exp.update(fullExp.exp).then(() => {

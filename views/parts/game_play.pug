@@ -9,12 +9,29 @@ block content
       | &nbsp;seconds to make your decision.
 
   block exclusion
-
-  p How many of your 10 points would you like to transfer to the group fund?
   
   form(action="game" method="POST")
-    - for(var i = 0; i <= 10; i++)
-      input(type="radio", name="contribution", value=i)
-      | #{i}
+    fieldset
+      legend Contribution
+      p How many of your 10 points would you like to transfer to the group fund?
+
+      - for(var i = 0; i <= 10; i++)
+        input(type="radio", name="contribution", value=i)
+        | #{i}
+        br
+    br
+
+    if exp.settings.fakeReputationEnabled
+      fieldset
+        legend Claimed Contribution
+        p You can claim to contribute more than you really do. The cost is (claimed - actual) * 20%. How would you claim your contribution?
+        p (If the claimed contribution is smaller than actual contribution, it will be considered to be actual contribution)
+        - for(var i = 0; i <= 10; i++)
+          input(type="radio", name="claimedContribution", value=i)
+          | #{i}
+          br
       br
+
     input(type="submit", value="Submit")
+
+
