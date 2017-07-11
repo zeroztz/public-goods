@@ -18,15 +18,15 @@ block content
     p
       each part in parts
         unless part.excluded
-          li #{part.name} #{part.claimedContributions[i]}
+          li #{part.name} #{part.claimedContributions[i].toFixed(2)}
 
-    p You actually contribute #{myself.contributions[i]}
+    p You actually contribute #{myself.contributions[i].toFixed(2)}
 
-    p Claimed group funds = #{exp.claimedFunds[i]}
+    p Claimed group funds = #{exp.claimedFunds[i].toFixed(2)}
 
-    p Actual group funds = #{exp.funds[i]}
+    p Actual group funds = #{exp.funds[i].toFixed(2)}
 
-    p Group earnings = #{exp.earnings[i]}
+    p Group earnings = #{exp.earnings[i].toFixed(2)}
 
     p Amount each participant claimed to earn in this round:
 
@@ -35,15 +35,13 @@ block content
         if part.excluded
           li #{part.name} was excluded (received no points).
         else 
-          li #{part.name} #{part.claimedIncomes[i]}
+          li #{part.name} #{part.claimedIncomes[i].toFixed(2)}
 
-    p You actually earn #{myself.incomes[i]}
+    p You actually earn #{myself.incomes[i].toFixed(2)}
 
-    p Amount each participant claimed to end up with:
+    p You claimed to end up with #{myself.claimedBalance.toFixed(2)}
 
-    p You claimed to end up with #{myself.claimedBalance}
-
-    p You actually end up with #{myself.balance}
+    p You actually end up with #{myself.balance.toFixed(2)}
 
   else 
     p Contributed to the group fund:
@@ -51,11 +49,11 @@ block content
     p
       each part in parts
         unless part.excluded
-          li #{part.name} #{part.contributions[i]}
+          li #{part.name} #{part.contributions[i].toFixed(2)}
 
-    p Group funds = #{exp.funds[i]}
+    p Group funds = #{exp.funds[i].toFixed(2)}
 
-    p Group earnings = #{exp.earnings[i]}
+    p Group earnings = #{exp.earnings[i].toFixed(2)}
 
     p Amount each participant earns in this round:
 
@@ -64,11 +62,9 @@ block content
         if part.excluded
           li #{part.name} was excluded (received no points).
         else 
-          li #{part.name} #{part.incomes[i]}
+          li #{part.name} #{part.incomes[i].toFixed(2)}
 
-    p Amount each participant ends up with:
-
-    p You end up with #{myself.balance}
+    p You end up with #{myself.balance.toFixed(2)}
 
   p Note: These points are yours to keep and will be unaffected by how you play in future rounds.
 

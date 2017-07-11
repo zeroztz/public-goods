@@ -192,7 +192,7 @@ function submitContribution(id, contribution, claimedContribution) {
             var parsedContribution = parseInt(contribution, 10);
             var parsedClaimedContribution = parseInt(claimedContribution, 10);
             if (parsedClaimedContribution < parsedContribution)
-                parseClaimedContribution = parsedContribution;
+                parsedClaimedContribution = parsedContribution;
             part.contributions.push(parsedContribution);
             part.claimedContributions.push(parsedClaimedContribution);
         }
