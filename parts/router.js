@@ -20,44 +20,51 @@ router.use((req, res, next) => {
     next();
 });
 
+router.use('/:part*', (req, res, next) => {
+    api.readPart(req.params.part).then((part) => {
+        req.resource = {
+            myself: part
+        };
+        next();
+    });
+});
+
 /**
  * GET /:part/
  *
  * Redirects to corresponding pages.
  */
 router.get('/:part/', (req, res, next) => {
-    api.readPart(req.params.part).then((part) => {
-        if (part.stage == stage.INSTRUCTION)
-            res.render('parts/instruction_basic.pug');
-        else if (part.stage == stage.WAIT)
-            res.render('parts/wait.pug');
-        else if (part.stage == stage.EXCLUSION_VOTE)
-            return api.loadFullExp(part.experimentId).then((fullExp) => {
-                res.render('parts/exclusion_vote.pug', fullExp);
-            });
-        else if (part.stage == stage.SELECT_CONTRIBUTION) {
-            return api.loadFullExp(part.experimentId).then((fullExp) => {
+    var resource = req.resource;
+    var myself = req.resource.myself;
+    if (myself.stage == stage.INSTRUCTION)
+        res.render('parts/instruction_basic.pug', resource);
+    else if (myself.stage == stage.WAIT)
+        res.render('parts/wait.pug', resource);
+    else {
+        return api.loadFullExp(myself.experimentId).then((fullExp) => {
+            resource.exp = fullExp.exp;
+            resource.parts = fullExp.parts;
+            if (myself.stage == stage.EXCLUSION_VOTE)
+                res.render('parts/exclusion_vote.pug', resource);
+            else if (myself.stage == stage.SELECT_CONTRIBUTION) {
                 if (fullExp.exp.settings.kickEnabled) {
-                    if (part.excluded) {
-                        res.render('parts/game_play_excluded.pug');
+                    if (myself.excluded) {
+                        res.render('parts/game_play_excluded.pug', resource);
                     } else {
-                        res.render('parts/game_play_not_excluded.pug',
-                            fullExp);
+                        res.render('parts/game_play_not_excluded.pug', resource);
                     }
                 } else {
-                    res.render('parts/game_play.pug', fullExp);
+                    res.render('parts/game_play.pug', resource);
                 }
-            });
-        } else if (part.stage == stage.VIEW_RESULT)
-            return api.loadFullExp(part.experimentId).then((fullExp) => {
-                fullExp.myself = part;
-                res.render('parts/game_result.pug', fullExp);
-            });
-        else
-            next(new Error(`Invalid stage: ${part.stage}`));
-    }).catch((err) => {
-        next(err);
-    });
+            } else if (myself.stage == stage.VIEW_RESULT)
+                res.render('parts/game_result.pug', resource);
+            else
+                next(new Error(`Invalid stage: ${part.stage}`));
+        }).catch((err) => {
+            next(err);
+        });
+    }
 });
 
 /**
@@ -66,7 +73,8 @@ router.get('/:part/', (req, res, next) => {
  * Shows a comprehension test
  */
 router.get('/:part/comprehension', (req, res, next) => {
-    res.render('parts/comprehension.pug', comprehension);
+    req.resource.comprehension = comprehension;
+    res.render('parts/comprehension.pug', req.resource);
 });
 
 /**
@@ -76,10 +84,11 @@ router.get('/:part/comprehension', (req, res, next) => {
  */
 router.post('/:part/comprehension', (req, res, next) => {
     api.validateComprehensionTest(req.params.part, req.body).then((result) => {
+        req.resource.comprehensionResult = result;
         if (result.missCount == 0) {
-            res.render('parts/comprehension_correct.pug');
+            res.render('parts/comprehension_correct.pug', req.resource);
         } else {
-            res.render('parts/comprehension_missed.pug', result);
+            res.render('parts/comprehension_missed.pug', req.resource);
         }
     }).catch((err) => {
         next(err);

@@ -249,7 +249,7 @@ describe(`[views]`, () => {
                     .post(`/parts/${firstPartId}/game`)
                     .send('contribution=10')
                     .expect(302)
-                    .expect('Location', `/parts/${firstPartId}`)
+                    .expect('Location', `/parts/${firstPartId}/`)
                     .end((err, res) => {
                         if (err) throw err;
                         utils.getRequest(config)
@@ -280,7 +280,7 @@ describe(`[views]`, () => {
                     .post(`/parts/${lastPartId}/game`)
                     .send('contribution=6')
                     .expect(302)
-                    .expect('Location', `/parts/${lastPartId}`)
+                    .expect('Location', `/parts/${lastPartId}/`)
                     .end((err, res) => {
                         if (err) throw err;
                         utils.getRequest(config)
@@ -301,7 +301,7 @@ describe(`[views]`, () => {
                 utils.getRequest(config)
                     .post(`/parts/${firstPartId}/next-round`)
                     .expect(302)
-                    .expect('Location', `/parts/${firstPartId}`)
+                    .expect('Location', `/parts/${firstPartId}/`)
                     .end((err) => {
                         if (err) throw err;
                         return utils.getRequest(config)
@@ -332,13 +332,13 @@ describe(`[views]`, () => {
                         .post(`/parts/${lastPartId}/game`)
                         .send('contribution=8')
                         .expect(302)
-                        .expect('Location', `/parts/${lastPartId}`)
+                        .expect('Location', `/parts/${lastPartId}/`)
                         .end((err) => {
                             if (err) throw err;
                             utils.getRequest(config)
                                 .get(`/parts/${lastPartId}`)
                                 .expect(200)
-                                .expect(/Participant #2 38/)
+                                .expect(/You end up with 38.00/)
                                 .expect(/<form action="next-round" method="POST"/)
                                 .end(done);
                         });
@@ -447,7 +447,7 @@ describe(`[views]`, () => {
                 utils.getRequest(config)
                     .post(`/parts/${firstPartId}/next-round`)
                     .expect(302)
-                    .expect('Location', `/parts/${firstPartId}`)
+                    .expect('Location', `/parts/${firstPartId}/`)
                     .end((err) => {
                         if (err) throw err;
                         return utils.getRequest(config)
@@ -462,7 +462,7 @@ describe(`[views]`, () => {
                     .post(`/parts/${firstPartId}/exclusion-vote`)
                     .send('vote=None')
                     .expect(302)
-                    .expect('Location', `/parts/${firstPartId}`)
+                    .expect('Location', `/parts/${firstPartId}/`)
                     .end((err) => {
                         if (err) throw err;
                         utils.getRequest(config)
@@ -488,7 +488,7 @@ describe(`[views]`, () => {
                     .post(`/parts/${lastPartId}/exclusion-vote`)
                     .send('vote=None')
                     .expect(302)
-                    .expect('Location', `/parts/${lastPartId}`)
+                    .expect('Location', `/parts/${lastPartId}/`)
                     .end((err) => {
                         if (err) throw err;
                         utils.getRequest(config)
@@ -510,13 +510,13 @@ describe(`[views]`, () => {
                         .post(`/parts/${lastPartId}/game`)
                         .send('contribution=10')
                         .expect(302)
-                        .expect('Location', `/parts/${lastPartId}`)
+                        .expect('Location', `/parts/${lastPartId}/`)
                         .end((err) => {
                             if (err) throw err;
                             utils.getRequest(config)
                                 .get(`/parts/${lastPartId}`)
                                 .expect(200)
-                                .expect(/Participant #2 40/)
+                                .expect(/You end up with 40.00/)
                                 .expect(/<form action="next-round" method="POST"/)
                                 .end(done);
                         });
@@ -564,14 +564,14 @@ describe(`[views]`, () => {
                     utils.getRequest(config)
                         .post(`/parts/${lastPartId}/game`)
                         .expect(302)
-                        .expect('Location', `/parts/${lastPartId}`)
+                        .expect('Location', `/parts/${lastPartId}/`)
                         .end((err) => {
                             if (err) throw err;
                             utils.getRequest(config)
                                 .get(`/parts/${lastPartId}`)
                                 .expect(200)
-                                .expect(/Participant #1 55/)
-                                .expect(/Participant #2 was excluded/)
+                                .expect(/Participant #1 10.00/)
+                                .expect(/You end up with 40.00/)
                                 .end(done);
                         });
                 });;
@@ -693,7 +693,7 @@ describe(`[views]`, () => {
                         claimedContribution: '10'
                     })
                     .expect(302)
-                    .expect('Location', `/parts/${firstPartId}`);
+                    .expect('Location', `/parts/${firstPartId}/`);
             });
             it(`the other participants should be able to play as normal`, () => {
                 return Promise.all(partIds.map((id) => {

@@ -29,7 +29,12 @@ app.use((req, res) => {
 // Basic error handler
 app.use((err, req, res, next) => {
     if (err.code !== undefined) {
-        res.status(err.code).send(err.message || 'no error message available.');
+        if (isNaN(err.code)) {
+            console.log(err);
+            res.status(500).send(err.msg || 'no error message available.');
+        } else {
+            res.status(err.code).send(err.message || 'no error message available.');
+        }
     } else {
         /* jshint unused:false */
         console.error(err);
