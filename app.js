@@ -11,10 +11,10 @@ app.set('view engine', 'pug');
 app.set('trust proxy', true);
 
 // Experiments
-app.use('/exps', require('./exps/router'));
+app.use('/exps', require('./exps.js'));
 
 // Participants
-app.use('/parts', require('./parts/router'));
+app.use('/parts', require('./parts.js'));
 
 // Redirect root to /exps
 app.get('/', (req, res) => {

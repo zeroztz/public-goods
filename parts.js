@@ -2,10 +2,9 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const api = require(`../api`);
-
-const comprehension = require('../data/comprehension');
-const stage = require('../stage');
+const api = require(`./api`);
+const comprehension = require('./data/comprehension');
+const stage = require('./stage');
 
 const router = express.Router();
 
