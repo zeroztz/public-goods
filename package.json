@@ -36,7 +36,7 @@
   },
   "devDependencies": {
     "google-datastore-emulator": "^1.0.4",
-    "mocha": "^3.2.0",
+    "mocha": "^3.5.3",
     "nodejs-repo-tools": "git+https://github.com/GoogleCloudPlatform/nodejs-repo-tools.git#21daa823090c43fb667157c8b5b0c3b7f45a8357",
     "should": "^11.2.1"
   },
