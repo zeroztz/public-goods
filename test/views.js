@@ -454,6 +454,9 @@ describe(`[views]`, () => {
                             .get(`/parts/${firstPartId}`)
                             .expect(200)
                             .expect(/Who would you like to cast your “exclusion vote” for?/)
+                            .expect(function(res){
+                                res.text.should.not.match(/value="Participant #1"/);
+                            })
                             .end(done)
                     });
             });

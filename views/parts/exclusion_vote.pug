@@ -23,9 +23,10 @@ block content
   form(action="exclusion-vote" method="POST")
     fieldset
       each part in parts
-        input(type="radio" name="vote" value=part.name)
-        |#{part.name}
-        br
+        if part.name != myself.name
+          input(type="radio" name="vote" value=part.name)
+          |#{part.name}
+          br
       input(type="radio" name="vote" value="None" checked)
       |None
       br
