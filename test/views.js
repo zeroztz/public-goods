@@ -576,16 +576,25 @@ describe(`[views]`, () => {
                         });
                 });;
             });
-            it(`the last participant should be able to join 4th round if not kicked`, (done) => {
+            it(`the last participant should not be able to vote exclusion of 4th round`, (done) => {
                 Promise.all(partIds.map((id) => {
                     return api.readyForNextRound(id).then((success) => {
                         success.should.be.true();
                     });
                 })).then(() => {
-                    return Promise.all(partIds.map((id) => {
+                    utils.getRequest(config)
+                        .get(`/parts/${lastPartId}`)
+                        .expect(200)
+                        .expect(/Please wait for all paritipants to finish./)
+                        .end(done);
+                });
+            });
+            it(`the last participant should be able to join 4th round`, (done) => {
+                Promise.all(partIds.map((id) => {
+                    if (id !=lastPartId) {
                         return api.submitExclusionVote(id, 'None');
-                    }));
-                }).then(() => {
+                    }
+                })).then(() => {
                     utils.getRequest(config)
                         .get(`/parts/${lastPartId}`)
                         .expect(200)

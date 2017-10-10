@@ -265,9 +265,11 @@ function readyForNextRound(id) {
             return false;
         }
         return datastore.exp.read(part.experimentId).then((exp) => {
-            part.excluded = false;
             if (exp.settings.kickEnabled)
-                part.stage = stage.EXCLUSION_VOTE;
+                if (part.excluded)
+                    part.stage = stage.WAIT;
+                else 
+                    part.stage = stage.EXCLUSION_VOTE;
             else
                 part.stage = stage.SELECT_CONTRIBUTION;
             return datastore.part.update(part);
@@ -302,10 +304,10 @@ function submitExclusionVote(id, vote) {
         var exp = fullExp.exp;
         var parts = fullExp.parts;
         var i = exp.finishedRound;
-
         var kickedParts = [];
 
         parts.map((part) => {
+            part.excluded = false;
             if (parts.reduce((totalVotes, otherPart) => {
                     if (otherPart.exclusionVotes[i] == part.name) {
                         return totalVotes + 1;
