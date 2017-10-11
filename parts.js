@@ -84,7 +84,7 @@ router.get('/:part/comprehension', (req, res, next) => {
 router.post('/:part/comprehension', (req, res, next) => {
     api.validateComprehensionTest(req.params.part, req.body).then((result) => {
         req.resource.comprehensionResult = result;
-        if (result.missCount == 0) {
+        if (result.missedQuestions.length == 0) {
             res.render('parts/comprehension_correct.pug', req.resource);
         } else {
             res.render('parts/comprehension_missed.pug', req.resource);

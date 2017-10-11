@@ -2,7 +2,9 @@ extends base.pug
 
 block content
   p You seem to have missed at least one of the comprehension check questions.
-  p You missed question number(s) ___________
+  p You missed questions are:
+  each question in comprehensionResult.missedQuestions
+    li #{question}
 
   p Please click 
     a(href=``) here 

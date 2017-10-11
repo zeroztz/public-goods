@@ -7,6 +7,22 @@ const utils = require(`nodejs-repo-tools`);
 const should = require(`should`);
 const api = require(`../api`);
 
+var apiTest = {
+    // Calls api.validateComprehensionTest and expects no missed questions.
+    bypassComprehensionTest : function(id) {
+        return api.validateComprehensionTest(
+            id, {
+                q1: 'c',
+                q2: 'b'
+            }
+        ).then((result) => {
+            return result.should.have.property('missedQuestions')
+                .which.have.property('length')
+                .which.equal(0);
+        });
+    }
+}
+
 describe(`[views]`, () => {
     before(() => {
         return process.env.should.have
@@ -186,6 +202,7 @@ describe(`[views]`, () => {
                     })
                     .expect(200)
                     .expect(/You seem to have missed at least one of the comprehension check questions./)
+                    .expect(/Question 2/)
             });
 
             it(`POST should pass when answers are correct`, () => {
@@ -223,14 +240,7 @@ describe(`[views]`, () => {
             it(`POST should let other particiants to finish comprehension test`, () => {
                 return Promise.all(partIds.map((id) => {
                     if (id != firstPartId) {
-                        return api.validateComprehensionTest(
-                            id, {
-                                q1: 'c',
-                                q2: 'b'
-                            }
-                        ).then((result) => {
-                            result.should.have.property('missCount').which.equal(0);
-                        });
+                        return apiTest.bypassComprehensionTest(id);
                     }
                 }));
             });
@@ -415,14 +425,7 @@ describe(`[views]`, () => {
             it(`POST should let other particiants to finish comprehension test`, () => {
                 return Promise.all(partIds.map((id) => {
                     if (id != firstPartId) {
-                        return api.validateComprehensionTest(
-                            id, {
-                                q1: 'c',
-                                q2: 'b'
-                            }
-                        ).then((result) => {
-                            result.should.have.property('missCount').which.equal(0);
-                        });
+                        return apiTest.bypassComprehensionTest(id);
                     }
                 }));
             });
@@ -677,14 +680,7 @@ describe(`[views]`, () => {
             it(`POST should let other particiants to finish comprehension test`, () => {
                 return Promise.all(partIds.map((id) => {
                     if (id != firstPartId) {
-                        return api.validateComprehensionTest(
-                            id, {
-                                q1: 'c',
-                                q2: 'b'
-                            }
-                        ).then((result) => {
-                            result.should.have.property('missCount').which.equal(0);
-                        });
+                        return apiTest.bypassComprehensionTest(id);
                     }
                 }));
             });

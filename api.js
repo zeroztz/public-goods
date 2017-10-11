@@ -137,7 +137,7 @@ function allWait(fullExp) {
  * Validates answer of comprehension test.
  */
 function validateComprehensionTest(id, answers) {
-    var missCount = 0;
+    var missedQuestions = [];
     return datastore.part.read(id).then((part) => {
         if (part.stage != stage.INSTRUCTION) {
             return Promise.reject({
@@ -147,10 +147,10 @@ function validateComprehensionTest(id, answers) {
         }
         comprehension.questions.forEach(function(question) {
             if (answers[question.name] != question.answer) {
-                ++missCount;
+                missedQuestions.push(question.legend);
             }
         });
-        if (missCount == 0) {
+        if (missedQuestions.length == 0) {
             part.stage = stage.WAIT;
 
             return datastore.part.update(part).then(() => {
@@ -166,7 +166,7 @@ function validateComprehensionTest(id, answers) {
         }
     }).then(() => {
         return {
-            missCount
+            missedQuestions
         }
     });
 }
