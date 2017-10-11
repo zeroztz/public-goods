@@ -47,7 +47,7 @@ router.get('/:part/', (req, res, next) => {
             if (myself.stage == stage.EXCLUSION_VOTE)
                 res.render('parts/exclusion_vote.pug', resource);
             else if (myself.stage == stage.SELECT_CONTRIBUTION) {
-                if (fullExp.exp.settings.kickEnabled) {
+                if (fullExp.exp.settings.kickEnabled && fullExp.exp.finishedRound > 0) {
                     if (myself.excluded) {
                         res.render('parts/game_play_excluded.pug', resource);
                     } else {

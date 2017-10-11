@@ -434,6 +434,9 @@ describe(`[views]`, () => {
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/How many of your .* points would you like to transfer to the group fund?/)
+                    .expect(function(res){
+                        res.text.should.not.match(/exclusion/);
+                    })
                     .expect(/<form action="game" method="POST"/);
             });
             it(`should finish first round like normal mode.`, () => {
