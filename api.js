@@ -71,7 +71,8 @@ function createExp(expConfig) {
         var settings = {
             partSize: parseInt(expConfig.partSize, 10),
             kickEnabled: (expConfig.kickEnabled == "true"),
-            fakeReputationEnabled: (expConfig.fakeReputationEnabled == "true")
+            fakeReputationEnabled: (expConfig.fakeReputationEnabled == "true"),
+            numRounds: 8
         }
         if (!settings.partSize === NaN ||
             !(settings.partSize > 1 && settings.partSize <= kMaxPartSize)) {
