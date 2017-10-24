@@ -70,15 +70,22 @@ function createExp(expConfig) {
 
         var settings = {
             partSize: parseInt(expConfig.partSize, 10),
+            numRounds: parseInt(expConfig.numRounds, 10),
             kickEnabled: (expConfig.kickEnabled == "true"),
             fakeReputationEnabled: (expConfig.fakeReputationEnabled == "true"),
-            numRounds: 8
         }
         if (!settings.partSize === NaN ||
             !(settings.partSize > 1 && settings.partSize <= kMaxPartSize)) {
             reject({
                 code: 400,
                 message: 'Number of participants is invalid.'
+            });
+        }
+        if (!settings.numRounds === NaN ||
+            !(settings.numRounds > 0)) {
+            reject({
+                code: 400,
+                message: 'Number of rounds is invalid.'
             });
         }
         resolve(settings);
@@ -266,7 +273,9 @@ function readyForNextRound(id) {
             return false;
         }
         return datastore.exp.read(part.experimentId).then((exp) => {
-            if (exp.settings.kickEnabled)
+            if (exp.finishedRound == exp.settings.numRounds) 
+                part.stage = stage.FINAL;
+            else if (exp.settings.kickEnabled)
                 if (part.excluded)
                     part.stage = stage.WAIT;
                 else 

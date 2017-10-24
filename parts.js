@@ -40,6 +40,8 @@ router.get('/:part/', (req, res, next) => {
         res.render('parts/instruction_basic.pug', resource);
     else if (myself.stage == stage.WAIT)
         res.render('parts/wait.pug', resource);
+    else if (myself.stage == stage.FINAL)
+        res.render('parts/final.pug', resource);
     else {
         return api.loadFullExp(myself.experimentId).then((fullExp) => {
             resource.exp = fullExp.exp;

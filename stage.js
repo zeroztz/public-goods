@@ -6,4 +6,5 @@ module.exports = Object.freeze({
     EXCLUSION_VOTE: 'exclusion_vote',
     SELECT_CONTRIBUTION: 'select contribution',
     VIEW_RESULT: 'view result',
+    FINAL: 'final',
 });

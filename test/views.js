@@ -36,7 +36,8 @@ describe(`[views]`, () => {
         before(() => {
             return api.createExp({
                 passcode: 'pg',
-                partSize: '4'
+                partSize: '4',
+                numRounds: '2'
             }).then((id) => {
                 id.should.not.be.NaN();
                 id.should.not.be.Infinity();
@@ -97,7 +98,8 @@ describe(`[views]`, () => {
                     .type('form')
                     .send({
                         passcode: 'pg',
-                        partSize: '3'
+                        partSize: '3',
+                        numRounds: '8'
                     })
                     .expect(302)
                     .expect((response) => {
@@ -147,7 +149,8 @@ describe(`[views]`, () => {
         before(() => {
             return api.createExp({
                 passcode: 'pg',
-                partSize: '4'
+                partSize: '4',
+                numRounds: '2'
             }).then((id) => {
                 id.should.not.be.NaN();
                 id.should.not.be.Infinity();
@@ -322,7 +325,7 @@ describe(`[views]`, () => {
                     });
             });
 
-            it(`should able to finish 2nd round`, (done) => {
+            it(`should be able to finish 2nd round`, (done) => {
                 Promise.all(partIds.map((id) => {
                     if (id != firstPartId) {
                         return api.readyForNextRound(id).then((success) => {
@@ -353,7 +356,19 @@ describe(`[views]`, () => {
                                 .end(done);
                         });
                 });
-
+            });
+            it(`should finish and show final points`, (done) => {
+                Promise.all(partIds.map((id) => {
+                    return api.readyForNextRound(id).then((success) => {
+                        success.should.be.true();
+                    });
+                })).then(() => {
+                    utils.getRequest(config)
+                        .get(`/parts/${lastPartId}`)
+                        .expect(200)
+                        .expect(/Game over.*Your final points are 38.00/)
+                        .end(done);
+                });
             });
         });
     });
@@ -368,6 +383,7 @@ describe(`[views]`, () => {
             return api.createExp({
                 passcode: 'pg',
                 partSize: '4',
+                numRounds: '8',
                 kickEnabled: 'true',
                 fakeReputationEnabled: 'false'
             }).then((id) => {
@@ -624,6 +640,7 @@ describe(`[views]`, () => {
             return api.createExp({
                 passcode: 'pg',
                 partSize: '4',
+                numRounds: '8',
                 kickEnabled: 'false',
                 fakeReputationEnabled: 'true'
             }).then((id) => {

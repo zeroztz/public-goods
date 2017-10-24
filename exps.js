@@ -39,7 +39,8 @@ router.get('/', (req, res, next) => {
 router.get('/create', (req, res) => {
     res.render('exps/create.pug', {
         experiment: {
-            partSize: 3
+            partSize: 3,
+            numRounds: 8
         }
     });
 });
