@@ -22,6 +22,7 @@ function newExp(settings) {
 
 function newPart(id, expId) {
     return {
+        idInGame: id,
         name: 'Participant #' + id,
         experimentId: expId,
         stage: 'instruction',
@@ -127,6 +128,9 @@ function loadFullExp(expId) {
             exp
         };
         return datastore.part.readMultiple(exp.participants).then((parts) => {
+            parts.sort((a, b) => {
+                return a.idInGame - b.idInGame;
+            });
             fullExp.parts = parts;
             return fullExp;
         });
