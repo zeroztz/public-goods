@@ -202,14 +202,14 @@ function submitContribution(id, contribution, claimedContribution) {
             part.claimedContributions.push(0);
         } else {
             var parsedContribution = parseInt(contribution, 10);
-            if (Number.isNaN(parsedContribution)) {
+            var parsedClaimedContribution = parseInt(claimedContribution, 10);
+            if (Number.isNaN(parsedContribution) ||
+                Number.isNaN(parsedClaimedContribution) ||
+                    parsedClaimedContribution < parsedContribution) {
                 return Promise.reject({
                     error: 'invalid contribution'
                 });
             }
-            var parsedClaimedContribution = parseInt(claimedContribution, 10);
-            if (parsedClaimedContribution < parsedContribution)
-                parsedClaimedContribution = parsedContribution;
             part.contributions.push(parsedContribution);
             part.claimedContributions.push(parsedClaimedContribution);
         }
