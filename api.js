@@ -75,14 +75,14 @@ function createExp(expConfig) {
             kickEnabled: (expConfig.kickEnabled == "true"),
             fakeReputationEnabled: (expConfig.fakeReputationEnabled == "true"),
         }
-        if (!settings.partSize === NaN ||
+        if (Number.isNaN(settings.partSize) ||
             !(settings.partSize > 1 && settings.partSize <= kMaxPartSize)) {
             reject({
                 code: 400,
                 message: 'Number of participants is invalid.'
             });
         }
-        if (!settings.numRounds === NaN ||
+        if (Number.isNaN(settings.numRounds) ||
             !(settings.numRounds > 0)) {
             reject({
                 code: 400,
@@ -202,6 +202,11 @@ function submitContribution(id, contribution, claimedContribution) {
             part.claimedContributions.push(0);
         } else {
             var parsedContribution = parseInt(contribution, 10);
+            if (Number.isNaN(parsedContribution)) {
+                return Promise.reject({
+                    error: 'invalid contribution'
+                });
+            }
             var parsedClaimedContribution = parseInt(claimedContribution, 10);
             if (parsedClaimedContribution < parsedContribution)
                 parsedClaimedContribution = parsedContribution;

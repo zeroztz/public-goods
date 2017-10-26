@@ -257,6 +257,22 @@ describe(`[views]`, () => {
                     .expect(/How many of your .* points would you like to transfer to the group fund?/)
                     .expect(/<form action="game" method="POST"/);
             });
+            it(`POST /game without contribution will go to error page and retry`, (done) => {
+                utils.getRequest(config)
+                    .post(`/parts/${firstPartId}/game`)
+                    .send('contribution=')
+                    .expect(200)
+                    .expect(/You didn't select contribution./)
+                    .expect(/Click.*here.*to retry./)
+                    .end((err, res) => {
+                        if (err) throw err;
+                        utils.getRequest(config)
+                            .get(`/parts/${firstPartId}`)
+                            .expect(200)
+                            .expect(/How many of your .* points would you like to transfer to the group fund?/)
+                            .end(done)
+                    });
+            });
             it(`POST /game should submit contribution and wait others`, (done) => {
                 utils.getRequest(config)
                     .post(`/parts/${firstPartId}/game`)

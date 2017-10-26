@@ -105,7 +105,11 @@ router.post('/:part/game', (req, res, next) => {
     api.submitContribution(req.params.part, req.body.contribution, req.body.claimedContribution).then(() => {
         res.redirect(`${req.baseUrl}/${req.params.part}/`);
     }, (err) => {
-        next(err);
+        if (err.error == 'invalid contribution') {
+            res.render('parts/game_error.pug', req.resource);
+        } else {
+            next(err);
+        }
     });
 });
 
