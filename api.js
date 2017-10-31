@@ -20,11 +20,12 @@ function newExp(settings) {
     };
 }
 
-function newPart(id, expId) {
+function newPart(id, exp) {
     return {
         idInGame: id,
         name: 'Participant #' + id,
-        experimentId: expId,
+        experimentId: exp.id,
+        experimentSettings: exp.settings,
         stage: 'instruction',
         excluded: false,
         finishedRound: 0,
@@ -97,7 +98,7 @@ function createExp(expConfig) {
         return datastore.exp.create(expData).then((exp) => {
             var partDataList = [];
             for (var i = 1; i <= exp.settings.partSize; ++i) {
-                partDataList.push(newPart(i, exp.id));
+                partDataList.push(newPart(i, exp));
             };
             return datastore.part.createMultiple(partDataList)
                 .then((parts) => {
@@ -196,6 +197,9 @@ function submitContribution(id, contribution, claimedContribution) {
                 code: 403,
                 message: "You have already made contribution this round"
             });
+        }
+        if (!part.experimentSettings.fakeReputationEnabled) {
+            claimedContribution = contribution;
         }
         if (part.excluded) {
             part.contributions.push(0);
