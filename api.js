@@ -1,6 +1,6 @@
 'use strict';
 
-const datastore = require('./storage/datastore');
+const storage = require('./storage/storage');
 
 const comprehension = require('./data/comprehension');
 const stage = require('./stage');
@@ -54,7 +54,7 @@ function getExps(token) {
         },
         startToken: token
     };
-    return datastore.exp.runQuery(query);
+    return storage.exp.runQuery(query);
 }
 
 /**
@@ -95,15 +95,15 @@ function createExp(expConfig) {
         // Creates a new experiment and corresponding participants with current date.
         // Return new experiment id if no error occurs.
         var expData = newExp(settings);
-        return datastore.exp.create(expData).then((exp) => {
+        return storage.exp.create(expData).then((exp) => {
             var partDataList = [];
             for (var i = 1; i <= exp.settings.partSize; ++i) {
                 partDataList.push(newPart(i, exp));
             };
-            return datastore.part.createMultiple(partDataList)
+            return storage.part.createMultiple(partDataList)
                 .then((parts) => {
                     exp.participants = parts.map((part) => part.id);
-                    return datastore.exp.update(exp)
+                    return storage.exp.update(exp)
                         .then(function() {
                             return exp.id;
                         });
@@ -113,22 +113,22 @@ function createExp(expConfig) {
 }
 
 function readExp(id) {
-    return datastore.exp.read(id);
+    return storage.exp.read(id);
 }
 
 function readPart(id) {
-    return datastore.part.read(id);
+    return storage.part.read(id);
 }
 
 /*
  * Loads all participants in a experiment.
  */
 function loadFullExp(expId) {
-    return datastore.exp.read(expId).then((exp) => {
+    return storage.exp.read(expId).then((exp) => {
         var fullExp = {
             exp
         };
-        return datastore.part.readMultiple(exp.participants).then((parts) => {
+        return storage.part.readMultiple(exp.participants).then((parts) => {
             parts.sort((a, b) => {
                 return a.idInGame - b.idInGame;
             });
@@ -151,7 +151,7 @@ function allWait(fullExp) {
  */
 function validateComprehensionTest(id, answers) {
     var missedQuestions = [];
-    return datastore.part.read(id).then((part) => {
+    return storage.part.read(id).then((part) => {
         if (part.stage != stage.INSTRUCTION) {
             return Promise.reject({
                 code: 403,
@@ -166,14 +166,14 @@ function validateComprehensionTest(id, answers) {
         if (missedQuestions.length == 0) {
             part.stage = stage.WAIT;
 
-            return datastore.part.update(part).then(() => {
+            return storage.part.update(part).then(() => {
                 return loadFullExp(part.experimentId);
             }).then((fullExp) => {
                 if (allWait(fullExp)) {
                     fullExp.parts.forEach((part) => {
                         part.stage = stage.SELECT_CONTRIBUTION;
                     });
-                    return datastore.part.updateMultiple(fullExp.parts);
+                    return storage.part.updateMultiple(fullExp.parts);
                 }
             });
         }
@@ -185,7 +185,7 @@ function validateComprehensionTest(id, answers) {
 }
 
 function submitContribution(id, contribution, claimedContribution) {
-    return datastore.part.read(id).then((part) => {
+    return storage.part.read(id).then((part) => {
         if (part.stage != stage.SELECT_CONTRIBUTION) {
             return Promise.reject({
                 code: 403,
@@ -218,7 +218,7 @@ function submitContribution(id, contribution, claimedContribution) {
             part.claimedContributions.push(parsedClaimedContribution);
         }
         part.stage = stage.WAIT;
-        return datastore.part.update(part).then(() => {
+        return storage.part.update(part).then(() => {
             return loadFullExp(part.experimentId);
         });
     }).then((fullExp) => {
@@ -269,8 +269,8 @@ function submitContribution(id, contribution, claimedContribution) {
             ++part.finishedRound;
         });
         ++exp.finishedRound;
-        return datastore.exp.update(fullExp.exp).then(() => {
-            return datastore.part.updateMultiple(fullExp.parts);
+        return storage.exp.update(fullExp.exp).then(() => {
+            return storage.part.updateMultiple(fullExp.parts);
         });
     });
 }
@@ -281,11 +281,11 @@ function submitContribution(id, contribution, claimedContribution) {
  * return true if succeed.
  */
 function readyForNextRound(id) {
-    return datastore.part.read(id).then((part) => {
+    return storage.part.read(id).then((part) => {
         if (part.stage != stage.VIEW_RESULT) {
             return false;
         }
-        return datastore.exp.read(part.experimentId).then((exp) => {
+        return storage.exp.read(part.experimentId).then((exp) => {
             if (exp.finishedRound == exp.settings.numRounds) 
                 part.stage = stage.FINAL;
             else if (exp.settings.kickEnabled)
@@ -295,7 +295,7 @@ function readyForNextRound(id) {
                     part.stage = stage.EXCLUSION_VOTE;
             else
                 part.stage = stage.SELECT_CONTRIBUTION;
-            return datastore.part.update(part);
+            return storage.part.update(part);
         }).then(() => {
             return true;
         });
@@ -308,7 +308,7 @@ function readyForNextRound(id) {
  * return true if vote is valid.
  */
 function submitExclusionVote(id, vote) {
-    return datastore.part.read(id).then((part) => {
+    return storage.part.read(id).then((part) => {
         if (part.stage != stage.EXCLUSION_VOTE) {
             return Promise.reject({
                 code: 403,
@@ -317,7 +317,7 @@ function submitExclusionVote(id, vote) {
         }
         part.exclusionVotes.push(vote);
         part.stage = stage.WAIT;
-        return datastore.part.update(part).then(() => {
+        return storage.part.update(part).then(() => {
             return loadFullExp(part.experimentId);
         });
     }).then((fullExp) => {
@@ -349,8 +349,8 @@ function submitExclusionVote(id, vote) {
         } else {
             exp.kickedParts.push('None');
         }
-        return datastore.exp.update(fullExp.exp).then(() => {
-            return datastore.part.updateMultiple(fullExp.parts);
+        return storage.exp.update(fullExp.exp).then(() => {
+            return storage.part.updateMultiple(fullExp.parts);
         });
     });
 }
