@@ -60,15 +60,13 @@ describe(`[views]`, () => {
             });
 
 
-            // TODO: Emulator does not support this case.
-            // TODO: should return badrequest
-            it.skip(`should handle error`, () => {
+            it(`should handle error`, () => {
                 return utils.getRequest(config)
                     .get(`/exps`)
                     .query({
                         pageToken: `badrequest`
                     })
-                    .expect(500);
+                    .expect(400);
             });
         });
 

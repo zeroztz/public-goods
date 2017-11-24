@@ -23,7 +23,7 @@ router.use((req, res, next) => {
  * Display a page of experiments (up to ten at a time).
  */
 router.get('/', (req, res, next) => {
-    api.getExps(req.query.pagetoken).then(function(result) {
+    api.getExps(req.query.pageToken).then(function(result) {
         res.render(`exps/list.pug`, result);
     }).catch(function(err) {
         next(err);
