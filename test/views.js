@@ -2,10 +2,14 @@
 
 // unit tests that every pages render correctly.
 
-const config = require(`./config`);
-const utils = require(`nodejs-repo-tools`);
+const app = require(`../app`);
+const supertest = require(`supertest`);
 const should = require(`should`);
 const api = require(`../api`);
+
+function getRequest() {
+    return supertest(app);
+}
 
 var apiTest = {
     // Calls api.validateComprehensionTest and expects no missed questions.
@@ -50,8 +54,7 @@ describe(`[views]`, () => {
 
         describe(`/`, () => {
             it(`should show a list of exps`, () => {
-                const expected = `<div class="media-body">`;
-                return utils.getRequest(config)
+                const expected = `<div class="media-body">`; return getRequest()
                     .get(`/exps`)
                     .expect(200)
                     .expect((response) => {
@@ -61,7 +64,7 @@ describe(`[views]`, () => {
 
 
             it(`should handle error`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/exps`)
                     .query({
                         pageToken: `badrequest`
@@ -72,20 +75,20 @@ describe(`[views]`, () => {
 
         describe('/create', () => {
             it('should reject without passcode.', () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post('/exps/create')
                     .expect(401);
             });
 
             it('should reject with incorrect passcode.', () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post('/exps/create')
                     .send('passcode=randomString')
                     .expect(401);
             });
 
             it('should create experiment with correct passcode.', () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/exps/create`)
                     .type('form')
                     .send({
@@ -108,7 +111,7 @@ describe(`[views]`, () => {
         describe(`/:exp`, () => {
             it(`should show corresponding exp.`, () => {
                 const expected = `Experiment ${expId}`;
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/exps/${expId}`)
                     .expect(200)
                     .expect((response) => {
@@ -125,7 +128,7 @@ describe(`[views]`, () => {
 
         describe(`/:exp`, () => {
             it(`should show 404 with id -1.`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/exps/-1`)
                     .expect(404)
             });
@@ -162,7 +165,7 @@ describe(`[views]`, () => {
         });
         describe(`[instruction]`, () => {
             it(`should show instructions`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/<h3>Instructions<\/h3>/)
@@ -173,14 +176,14 @@ describe(`[views]`, () => {
 
         describe(`/comprehension`, () => {
             it(`POST ./game should not submit contribution`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/parts/${firstPartId}/game`)
                     .expect(403)
                     .expect(/not in game stage/)
             });
 
             it(`GET should show comprehension test`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}/comprehension`)
                     .expect(200)
                     .expect(/<h3>Comprehension Test<\/h3>/)
@@ -188,7 +191,7 @@ describe(`[views]`, () => {
             });
 
             it(`POST should not pass when there is any incorrect answer`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/parts/${firstPartId}/comprehension`)
                     .type('form')
                     .send({
@@ -201,7 +204,7 @@ describe(`[views]`, () => {
             });
 
             it(`POST should pass when answers are correct`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/parts/${firstPartId}/comprehension`)
                     .type('form')
                     .send({
@@ -214,7 +217,7 @@ describe(`[views]`, () => {
             });
 
             it(`POST should not allow you submit it again once you passed`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/parts/${firstPartId}/comprehension`)
                     .type('form')
                     .send({
@@ -226,7 +229,7 @@ describe(`[views]`, () => {
             });
 
             it(`GET ./ should wait for other participants`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/Please wait for all paritipants to finish./)
@@ -243,14 +246,14 @@ describe(`[views]`, () => {
 
         describe(`[game]`, () => {
             it(`GET should show game play`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/How many of your .* points would you like to transfer to the group fund?/)
                     .expect(/<form action="game" method="POST"/);
             });
             it(`POST /game without contribution will go to error page and retry`, (done) => {
-                utils.getRequest(config)
+                getRequest()
                     .post(`/parts/${firstPartId}/game`)
                     .send('contribution=')
                     .expect(200)
@@ -258,7 +261,7 @@ describe(`[views]`, () => {
                     .expect(/Click.*here.*to retry./)
                     .end((err, res) => {
                         if (err) throw err;
-                        utils.getRequest(config)
+                        getRequest()
                             .get(`/parts/${firstPartId}`)
                             .expect(200)
                             .expect(/How many of your .* points would you like to transfer to the group fund?/)
@@ -266,14 +269,14 @@ describe(`[views]`, () => {
                     });
             });
             it(`POST /game should submit contribution and wait others`, (done) => {
-                utils.getRequest(config)
+                getRequest()
                     .post(`/parts/${firstPartId}/game`)
                     .send('contribution=10')
                     .expect(302)
                     .expect('Location', `/parts/${firstPartId}/`)
                     .end((err, res) => {
                         if (err) throw err;
-                        utils.getRequest(config)
+                        getRequest()
                             .get(`/parts/${firstPartId}`)
                             .expect(200)
                             .expect(/Please wait for all paritipants to finish./)
@@ -281,7 +284,7 @@ describe(`[views]`, () => {
                     });
             });
             it(`POST /game should not allow submit contribution again`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/parts/${firstPartId}/game`)
                     .send('contribution=8')
                     .expect(403)
@@ -297,14 +300,14 @@ describe(`[views]`, () => {
                 }));
             });
             it(`POST /game should show result when last participant submitted contribution`, (done) => {
-                utils.getRequest(config)
+                getRequest()
                     .post(`/parts/${lastPartId}/game`)
                     .send('contribution=6')
                     .expect(302)
                     .expect('Location', `/parts/${lastPartId}/`)
                     .end((err, res) => {
                         if (err) throw err;
-                        utils.getRequest(config)
+                        getRequest()
                             .get(`/parts/${lastPartId}`)
                             .expect(200)
                             .expect(/Participant #2 20/)
@@ -313,19 +316,19 @@ describe(`[views]`, () => {
                     });
             });
             it(`GET should show result after all participants submitted contribution`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/Participant #1 16/);
             });
             it(`POST /next-round should redirect to ./ and show next round`, (done) => {
-                utils.getRequest(config)
+                getRequest()
                     .post(`/parts/${firstPartId}/next-round`)
                     .expect(302)
                     .expect('Location', `/parts/${firstPartId}/`)
                     .end((err) => {
                         if (err) throw err;
-                        return utils.getRequest(config)
+                        return getRequest()
                             .get(`/parts/${firstPartId}`)
                             .expect(200)
                             .expect(/How many of your .* points would you like to transfer to the group fund?/)
@@ -349,14 +352,14 @@ describe(`[views]`, () => {
                         }
                     }));
                 }).then(() => {
-                    utils.getRequest(config)
+                    getRequest()
                         .post(`/parts/${lastPartId}/game`)
                         .send('contribution=8')
                         .expect(302)
                         .expect('Location', `/parts/${lastPartId}/`)
                         .end((err) => {
                             if (err) throw err;
-                            utils.getRequest(config)
+                            getRequest()
                                 .get(`/parts/${lastPartId}`)
                                 .expect(200)
                                 .expect(/You end up with 38.00/)
@@ -371,7 +374,7 @@ describe(`[views]`, () => {
                         success.should.be.true();
                     });
                 })).then(() => {
-                    utils.getRequest(config)
+                    getRequest()
                         .get(`/parts/${lastPartId}`)
                         .expect(200)
                         .expect(/Game over.*Your final points are 38.00/)
@@ -413,7 +416,7 @@ describe(`[views]`, () => {
         });
         describe(`[instruction]`, () => {
             it(`should show instructions`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/<h3>Instructions<\/h3>/)
@@ -425,7 +428,7 @@ describe(`[views]`, () => {
         describe(`/comprehension`, () => {
             // TODO: add kick specific instruction.
             it(`GET should show comprehension test`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}/comprehension`)
                     .expect(200)
                     .expect(/<h3>Comprehension Test<\/h3>/)
@@ -433,7 +436,7 @@ describe(`[views]`, () => {
             });
 
             it(`POST should pass when answers are correct`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/parts/${firstPartId}/comprehension`)
                     .type('form')
                     .send({
@@ -457,7 +460,7 @@ describe(`[views]`, () => {
 
         describe(`[game]`, () => {
             it(`GET should show game play`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/How many of your .* points would you like to transfer to the group fund?/)
@@ -474,13 +477,13 @@ describe(`[views]`, () => {
                 }));
             });
             it(`POST /next-round should redirect to ./ and show exclusive vote`, (done) => {
-                utils.getRequest(config)
+                getRequest()
                     .post(`/parts/${firstPartId}/next-round`)
                     .expect(302)
                     .expect('Location', `/parts/${firstPartId}/`)
                     .end((err) => {
                         if (err) throw err;
-                        return utils.getRequest(config)
+                        return getRequest()
                             .get(`/parts/${firstPartId}`)
                             .expect(200)
                             .expect(/Who would you like to cast your “exclusion vote” for?/)
@@ -491,14 +494,14 @@ describe(`[views]`, () => {
                     });
             });
             it(`POST /exclusion-vote should redirect to ./ and wait.`, (done) => {
-                utils.getRequest(config)
+                getRequest()
                     .post(`/parts/${firstPartId}/exclusion-vote`)
                     .send('vote=None')
                     .expect(302)
                     .expect('Location', `/parts/${firstPartId}/`)
                     .end((err) => {
                         if (err) throw err;
-                        utils.getRequest(config)
+                        getRequest()
                             .get(`/parts/${firstPartId}`)
                             .expect(200)
                             .expect(/Please wait for all paritipants to finish./)
@@ -517,14 +520,14 @@ describe(`[views]`, () => {
                 }));
             });
             it(`POST /exclusion-vote should show game play when last participant submitted`, (done) => {
-                utils.getRequest(config)
+                getRequest()
                     .post(`/parts/${lastPartId}/exclusion-vote`)
                     .send('vote=None')
                     .expect(302)
                     .expect('Location', `/parts/${lastPartId}/`)
                     .end((err) => {
                         if (err) throw err;
-                        utils.getRequest(config)
+                        getRequest()
                             .get(`/parts/${lastPartId}`)
                             .expect(200)
                             .expect(/How many of your .* points would you like to transfer to the group fund?/)
@@ -539,14 +542,14 @@ describe(`[views]`, () => {
                         });
                     }
                 })).then(() => {
-                    utils.getRequest(config)
+                    getRequest()
                         .post(`/parts/${lastPartId}/game`)
                         .send('contribution=10')
                         .expect(302)
                         .expect('Location', `/parts/${lastPartId}/`)
                         .end((err) => {
                             if (err) throw err;
-                            utils.getRequest(config)
+                            getRequest()
                                 .get(`/parts/${lastPartId}`)
                                 .expect(200)
                                 .expect(/You end up with 40.00/)
@@ -571,14 +574,14 @@ describe(`[views]`, () => {
                         }));
                     });
                 }).then(() => {
-                    utils.getRequest(config)
+                    getRequest()
                         .get(`/parts/${lastPartId}`)
                         .expect(200)
                         .expect(/You received at least/)
                         .expect(/and will not play in this round/)
                         .end((err) => {
                             if (err) throw err;
-                            utils.getRequest(config)
+                            getRequest()
                                 .get(`/parts/${firstPartId}`)
                                 .expect(200)
                                 .expect(/Participant #2 received at least/)
@@ -594,13 +597,13 @@ describe(`[views]`, () => {
                         });
                     }
                 })).then(() => {
-                    utils.getRequest(config)
+                    getRequest()
                         .post(`/parts/${lastPartId}/game`)
                         .expect(302)
                         .expect('Location', `/parts/${lastPartId}/`)
                         .end((err) => {
                             if (err) throw err;
-                            utils.getRequest(config)
+                            getRequest()
                                 .get(`/parts/${lastPartId}`)
                                 .expect(200)
                                 .expect(/Participant #1 10.00/)
@@ -615,7 +618,7 @@ describe(`[views]`, () => {
                         success.should.be.true();
                     });
                 })).then(() => {
-                    utils.getRequest(config)
+                    getRequest()
                         .get(`/parts/${lastPartId}`)
                         .expect(200)
                         .expect(/Please wait for all paritipants to finish./)
@@ -628,7 +631,7 @@ describe(`[views]`, () => {
                         return api.submitExclusionVote(id, 'None');
                     }
                 })).then(() => {
-                    utils.getRequest(config)
+                    getRequest()
                         .get(`/parts/${lastPartId}`)
                         .expect(200)
                         .expect(/How many of your .* points would you like to transfer to the group fund?/)
@@ -671,7 +674,7 @@ describe(`[views]`, () => {
         describe(`[instruction]`, () => {
             // TODO: add fake reputaion specific instruction.
             it(`should show instructions`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/.*<a href="comprehension">.*/)
@@ -681,7 +684,7 @@ describe(`[views]`, () => {
         describe(`/comprehension`, () => {
             // TODO: add fake reputaion specific test.
             it(`GET should show comprehension test`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}/comprehension`)
                     .expect(200)
                     .expect(/<h3>Comprehension Test<\/h3>/)
@@ -689,7 +692,7 @@ describe(`[views]`, () => {
             });
 
             it(`POST should pass when answers are correct`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/parts/${firstPartId}/comprehension`)
                     .type('form')
                     .send({
@@ -713,7 +716,7 @@ describe(`[views]`, () => {
 
         describe(`[game]`, () => {
             it(`GET should show game play`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/How many of your .* points would you like to transfer to the group fund?/)
@@ -721,7 +724,7 @@ describe(`[views]`, () => {
                     .expect(/<form action="game" method="POST"/);
             });
             it(`the first participant should be able to fake reputation`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .post(`/parts/${firstPartId}/game`)
                     .type('form')
                     .send({
@@ -741,7 +744,7 @@ describe(`[views]`, () => {
                 }));
             });
             it(`the first participant should see claimed result and actual result of theirselves`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${firstPartId}`)
                     .expect(200)
                     .expect(/Claimed contribution.*Participant #1 10.*actually contribute 0/)
@@ -751,7 +754,7 @@ describe(`[views]`, () => {
                     .expect(/claimed to earn.*Participant #1 15.*actually earn 23/);
             });
             it(`the last paricipant should not see the actuall result of the first participant`, () => {
-                return utils.getRequest(config)
+                return getRequest()
                     .get(`/parts/${lastPartId}`)
                     .expect(200)
                     .expect(/Claimed contribution.*Participant #1 10.*actually contribute 10/)
