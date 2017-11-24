@@ -1,11 +1,12 @@
 'use strict'
 
-const datastore = require('./datastore')
-const dummy = require('./dummy')
+const inUT = process.env._.endsWith("mocha")
+
+const {part, exp} = inUT ? require('./dummy') : require('./datastore')
 
 // [START exports]
 module.exports = {
-    datastore.exp,
-    datastore.part
+    exp,
+    part
 };
 // [END exports]

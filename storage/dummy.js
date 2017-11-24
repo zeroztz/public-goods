@@ -1,20 +1,19 @@
 'use strict';
 
 // Dummy version of storage. Used only in Unit test.
-function checkID(id) {
+function checkID(id, length) {
     if (Number.isNaN(id)) {
         return Promise.reject(id + " is NaN");
-    } else if (id >=0 && id < this.entries.length) {
+    } else if (id >=0 && id < length) {
         return Promise.resolve(id);
     } else {
-        return Promise.reject(id + " is not in [0, " + this.entries.length + ")");
+        return Promise.reject(id + " is not in [0, " + length + ")");
     }
 }
 
 
 class PromiseOrientedStorage {
-    constructor(kind) {
-        this.kind = kind;
+    constructor() {
         this.entries = [];
     }
 
@@ -62,33 +61,33 @@ class PromiseOrientedStorage {
     }
 
     createMultiple(entries) {
-        return Promise.all(entries.map(this.create));
+        return Promise.all(entries.map(this.create, this));
     }
 
     read(id) {
-        return checkID(id).then((id) => {
+        return checkID(id, this.entries.length).then((id) => {
             return JSON.parse(this.entries[id]);
         });
     }
 
     readMultiple(ids) {
-        return Promise.all(ids.map(this.read));
+        return Promise.all(ids.map(this.read), this);
     }
 
     update(entry) {
-        return checkID(entry.id).then((id) => {
+        return checkID(entry.id, this.entries.length).then((id) => {
             this.entries[id] = JSON.stringify(entry);
         });
     }
 
     updateMultiple(entries) {
-        return Promise.all(entries.map(this.update));
+        return Promise.all(entries.map(this.update), this);
     }
 }
 
-const exp = new PromiseOrientedStorage(kindExperiment);
+const exp = new PromiseOrientedStorage();
 
-const part = new PromiseOrientedStorage(kindParticipant);
+const part = new PromiseOrientedStorage();
 
 // [START exports]
 module.exports = {

@@ -24,12 +24,6 @@ var apiTest = {
 }
 
 describe(`[views]`, () => {
-    before(() => {
-        return process.env.should.have
-            .property('DATASTORE_EMULATOR_HOST')
-            .which.startWith('localhost:');
-    });
-
     describe(`/exps`, () => {
         let expId;
         let partIds;
