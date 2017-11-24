@@ -1,13 +1,6 @@
 'use strict'
 
-const inUT = process.env._.endsWith("mocha")
-
-if (inUT) {
-    console.log("inUT");
-} else {
-    console.log("not inUT");
-    console.log(process.env);
-}
+const inUT = process.env.LOADED_MOCHA_OPTS == "true";
 
 const {part, exp} = inUT ? require('./dummy') : require('./datastore')
 
