@@ -23,7 +23,7 @@ block content_formal
   form(action="exclusion-vote" method="POST")
     fieldset
       each part in parts
-        if part.name != myself.name
+        if part.name != myself.name && !part.excluded
           input(type="radio" name="vote" value=part.name)
           |#{part.name}
           br
