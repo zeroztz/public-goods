@@ -257,7 +257,7 @@ describe(`[views]`, () => {
                     .post(`/parts/${firstPartId}/game`)
                     .send('contribution=')
                     .expect(200)
-                    .expect(/You didn't select contribution./)
+                    .expect(/You did not select contribution./)
                     .expect(/Click.*here.*to retry./)
                     .end((err, res) => {
                         if (err) throw err;
@@ -722,6 +722,18 @@ describe(`[views]`, () => {
                     .expect(/How many of your .* points would you like to transfer to the group fund?/)
                     .expect(/You can claim to contribute more than you really do/)
                     .expect(/<form action="game" method="POST"/);
+            });
+            it(`fake contribution should not be lower than actual contribution`, () => {
+                return getRequest()
+                    .post(`/parts/${firstPartId}/game`)
+                    .type('form')
+                    .send({
+                        contribution: '10',
+                        claimedContribution: '0'
+                    })
+                    .expect(200)
+                    .expect(/Your claimed contribution can not be lower than your actual contribution. Please select again./)
+                    .expect(/Click.*here.*to retry./)
             });
             it(`the first participant should be able to fake reputation`, () => {
                 return getRequest()

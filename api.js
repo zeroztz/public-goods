@@ -208,10 +208,16 @@ function submitContribution(id, contribution, claimedContribution) {
             var parsedContribution = parseInt(contribution, 10);
             var parsedClaimedContribution = parseInt(claimedContribution, 10);
             if (Number.isNaN(parsedContribution) ||
-                Number.isNaN(parsedClaimedContribution) ||
-                    parsedClaimedContribution < parsedContribution) {
+                Number.isNaN(parsedClaimedContribution)) {
                 return Promise.reject({
-                    error: 'invalid contribution'
+                    code: 400,
+                    message: 'You did not select contributions.'
+                });
+            }
+            if (parsedClaimedContribution < parsedContribution) {
+                return Promise.reject({
+                    code: 400,
+                    message: 'Your claimed contribution can not be lower than your actual contribution. Please select again.'
                 });
             }
             part.contributions.push(parsedContribution);
