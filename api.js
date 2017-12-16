@@ -272,7 +272,6 @@ function submitContribution(id, contribution, claimedContribution) {
             part.balance += part.incomes[i];
             part.claimedBalance += part.claimedIncomes[i];
             part.stage = stage.VIEW_RESULT;
-            ++part.finishedRound;
         });
         ++exp.finishedRound;
         return storage.exp.update(fullExp.exp).then(() => {
@@ -292,7 +291,8 @@ function readyForNextRound(id) {
             return false;
         }
         return storage.exp.read(part.experimentId).then((exp) => {
-            if (exp.finishedRound == exp.settings.numRounds) 
+            ++part.finishedRound;
+            if (part.finishedRound == exp.settings.numRounds) 
                 part.stage = stage.FINAL;
             else if (exp.settings.kickEnabled)
                 if (part.excluded)

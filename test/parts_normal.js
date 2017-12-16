@@ -188,6 +188,7 @@ describe(`[normal] /parts/:part`, () => {
             return utils.getRequest()
                 .get(`/parts/${firstPartId}`)
                 .expect(200)
+                .expect(/Round 1/)
                 .expect(/Participant #1 16/);
         });
         it(`POST /next-round should redirect to ./ and show next round`, (done) => {
