@@ -295,9 +295,10 @@ function readyForNextRound(id) {
             if (part.finishedRound == exp.settings.numRounds) 
                 part.stage = stage.FINAL;
             else if (exp.settings.kickEnabled)
-                if (part.excluded)
+                if (part.excluded) {
+                    part.exclusionVotes.push('None');
                     part.stage = stage.WAIT;
-                else 
+                } else 
                     part.stage = stage.EXCLUSION_VOTE;
             else
                 part.stage = stage.SELECT_CONTRIBUTION;

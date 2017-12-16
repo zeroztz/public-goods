@@ -234,7 +234,7 @@ describe(`[kick] /parts/:part`, () => {
         });
         it(`the last participant should be able to join 4th round`, (done) => {
             Promise.all(partIds.map((id) => {
-                if (id !=lastPartId) {
+                if (id != lastPartId) {
                     return api.submitExclusionVote(id, 'None');
                 }
             })).then(() => {
