@@ -11,27 +11,13 @@ describe(`[fake reputation] /parts/:part`, () => {
     let lastPartId;
 
     before(() => {
-        return api.createExp({
-            passcode: 'pg',
-            partSize: '4',
-            numRounds: '8',
-            kickEnabled: 'false',
+        return utils.createExp({
             fakeReputationEnabled: 'true'
-        }).then((id) => {
-            id.should.not.be.NaN();
-            id.should.not.be.Infinity();
-            expId = id;
-            return api.readExp(expId).then((result) => {
-                result.should.not.be.null();
-                result.should.have.property('participants')
-                    .which.is.a.Array().and.have.length(4);
-                partIds = result.participants.map((part) => {
-                    part.should.be.a.Number();
-                    return part;
-                });
-                firstPartId = partIds[0];
-                lastPartId = partIds[1];
-            });
+        }).then((result) => {
+            expId = result.expId;
+            partIds = result.partIds;
+            firstPartId = partIds[0];
+            lastPartId = partIds[1];
         });
     });
     describe(`[instruction]`, () => {

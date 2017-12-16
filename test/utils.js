@@ -5,6 +5,33 @@ const api = require(`../api`);
 const supertest = require(`supertest`);
 
 module.exports = {
+    createExp : function(config) {
+        config = Object.assign({
+            passcode: 'pg',
+            partSize: '4',
+            numRounds: '2',
+            kickEnabled: 'false',
+            fakeReputationEnabled: 'false'
+        }, config);
+        return api.createExp(config).then((id) => {
+            id.should.not.be.NaN();
+            id.should.not.be.Infinity();
+            return api.readExp(id).then((result) => {
+                result.should.not.be.null();
+                result.should.have.property('participants')
+                    .which.is.a.Array().and.have.length(4);
+                var partIds = result.participants.map((part) => {
+                    part.should.be.a.Number();
+                    return part;
+                });
+                return {
+                    expId: id,
+                    partIds
+                };
+            });
+        });
+    },
+
     getRequest : function() {
         return supertest(app);
     },
